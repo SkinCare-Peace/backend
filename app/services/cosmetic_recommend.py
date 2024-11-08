@@ -1,81 +1,6 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
-# 전역 변수 선언: 피부 고민 및 피부 타입별 추천 성분 사전
-concern_ingredient_dict = {
-    "여드름성": [
-        "노니추출물",
-        "노니열매추출물",
-        "병풀추출물",
-        "병풀단백질추출물",
-        "병풀오일",
-        "병풀잎수",
-        "프로폴리스추출물",
-        "알란토인",
-        "캐모마일꽃추출물",
-        "캐모마일꽃수",
-        "캐모마일꽃오일",
-        "감초추출물",
-        "녹차수",
-        "녹차오일",
-        "녹차추출물",
-        "약모밀추출물",
-        "브로콜리추출물",
-        "브로콜리싹추출물",
-        "창포뿌리추출물",
-        "오이열매추출물",
-        "오이추출물",
-    ],
-    "건성": [
-        "노니추출물",
-        "노니열매추출물",
-        "바다포도추출물",
-        "꿀",
-        "꿀추출물",
-        "베타인",
-        "브로콜리추출물",
-        "브로콜리싹추출물",
-        "맥주효모추출물",
-    ],
-    "지성": [
-        "오이열매추출물",
-        "오이추출물",
-        "노니추출물",
-        "노니열매추출물",
-        "알란토인",
-        "황금추출물",
-        "프로폴리스추출물",
-        "녹차수",
-        "녹차오일",
-        "녹차추출물",
-        "개똥쑥추출물",
-        "브로콜리추출물",
-        "브로콜리싹추출물",
-        "병풀뿌리추출물",
-        "병풀오일",
-        "병풀잎수",
-        "병풀잎추출물",
-        "병풀추출물",
-    ],
-    "민감성": [
-        "노니추출물",
-        "노니열매추출물",
-        "황금추출물",
-        "알란토인",
-        "바다포도추출물",
-        "프로폴리스추출물",
-        "캐모마일꽃수",
-        "캐모마일꽃오일",
-        "캐모마일꽃추출물",
-        "오이열매추출물",
-        "오이추출물",
-        "개똥쑥추출물",
-        "브로콜리싹추출물",
-        "브로콜리추출물",
-        "맥주효모추출물",
-    ],
-}
-
 
 def recommend_cosmetics(
     csv_file_path,
@@ -87,6 +12,22 @@ def recommend_cosmetics(
 ):
     # 1. 데이터 로딩
     df = pd.read_csv(csv_file_path)
+
+    # 1.1 고민별 성분 데이터 로딩
+    concern_ingredient_df = pd.read_csv(
+        "data/ingredient_effectiveness_scores.csv", encoding="utf-8-sig"
+    )
+    concern_ingredient_df.fillna("", inplace=True)
+    # 1.2 성분별 고민 매핑 딕셔너리 생성
+    ingredient_effectiveness = {}
+    for index, row in concern_ingredient_df.iterrows():
+        ingredient = row["Korean Name"].strip().lower()
+        # 나머지 모든 열: 고민에 대한 효능 점수
+        concerns = {
+            concern: row[concern] for concern in concern_ingredient_df.columns[1:]
+        }
+
+        ingredient_effectiveness[ingredient] = concerns
 
     # 2. 데이터 전처리
     # 2.1 중복 제거 및 인덱스 재설정
@@ -121,7 +62,7 @@ def recommend_cosmetics(
     filtered_df = df[df["cosmetic_type"].isin(preferred_cosmetic_types)]
 
     # 3.2.2 피부 타입 필터링
-    filtered_df = filtered_df[filtered_df["skin_type"] == user_skin_type]
+    filtered_df = filtered_df[filtered_df["skin_type"] == user_skin_type.lower()]
 
     # 3.2.3 알레르기 및 비선호 성분 필터링
     def contains_allergic_ingredient(ingredients, allergic_ingredients):
@@ -156,25 +97,28 @@ def recommend_cosmetics(
 
     # 3.3.2 피부 고민 및 피부 타입 매칭 점수
     def concern_match_score(ingredients, user_concerns):
-        total_concerns = len(user_concerns)
-        matched_concerns = 0
+        total_effectiveness = 0
         matching_ingredients = set()
+        matched_concerns = set()
 
-        for concern in user_concerns:
-            concern_ingredients = concern_ingredient_dict.get(concern, [])
-            concern_ingredients_lower = [ing.lower() for ing in concern_ingredients]
-            if concern_ingredients_lower:
-                matched = set(ingredients) & set(concern_ingredients_lower)
-                if matched:
-                    matched_concerns += 1
-                    matching_ingredients.update(matched)
+        for ingredient in ingredients:
+            for concern in user_concerns:
+                effectiveness = ingredient_effectiveness.get(ingredient, {}).get(
+                    concern, 0
+                )
+                total_effectiveness += effectiveness
+                if effectiveness > 0:
+                    matching_ingredients.add(ingredient)
+                    matched_concerns.add(concern)
 
-        if total_concerns > 0:
-            concern_score = matched_concerns / total_concerns  # 매칭된 고민의 비율
-        else:
-            concern_score = 0
+        max_total = len(user_concerns) * 5  # 각 고민당 최대 5점
+        total_effectiveness = min(
+            total_effectiveness, max_total
+        )  # 최대 총점을 초과하지 않도록 캡핑
 
-        return concern_score, matching_ingredients
+        concern_score = total_effectiveness / max_total if max_total else 0
+
+        return concern_score, matched_concerns, matching_ingredients
 
     # 3. 함수 적용 및 개별 점수 저장
     filtered_df["skin_type_score"] = filtered_df["skin_type"].apply(
@@ -188,7 +132,8 @@ def recommend_cosmetics(
         lambda x: concern_match_score(x, user_concerns)
     )
     filtered_df["concern_score"] = concern_results.apply(lambda x: x[0])
-    filtered_df["matching_ingredients"] = concern_results.apply(lambda x: list(x[1]))
+    filtered_df["matched_concerns"] = concern_results.apply(lambda x: x[1])
+    filtered_df["matching_ingredients"] = concern_results.apply(lambda x: list(x[2]))
 
     # 4. 총점 계산
     # 새로운 가중치 설정
@@ -231,9 +176,14 @@ def recommend_cosmetics(
         reasons = []
         if product["skin_type_score"] == 1:
             reasons.append("사용자의 피부 타입과 일치함")
+        if product["matched_concerns"]:
+            matching_concerns = ", ".join(product["matched_concerns"])
+            reasons.append(
+                f"피부 고민에 맞는 성분 포함 (고민 매칭): {matching_concerns}"
+            )
         if product["matching_ingredients"]:
             matching_ings = ", ".join(product["matching_ingredients"])
-            reasons.append(f"피부 고민에 맞는 성분 포함: {matching_ings}")
+            reasons.append(f"해당 성분 포함: {matching_ings}")
         print("추천 이유:", "; ".join(reasons))
         print("----------------------------------------------------")
 
@@ -242,10 +192,12 @@ if __name__ == "__main__":
     # csv_file_path: CSV 파일의 경로 또는 링크
     csv_file_path = "data/oliveyoung_products_all.csv"
 
-    # 사용자 입력값 설림림
-    user_skin_type = "수부지"  # 사용자 피부 타입
-    user_concerns = ["여드름성"]  # 사용자 피부 고민 리스트
-    preferred_cosmetic_types = ["앰플"]  # 추천받고자 하는 화장품 종류 리스트
+    # 사용자 입력값 설정
+    user_skin_type = "건성"  # 사용자 피부 타입
+    user_concerns = [
+        "여드름",
+    ]  # 사용자 피부 고민 리스트
+    preferred_cosmetic_types = ["세럼"]  # 추천받고자 하는 화장품 종류 리스트
     allergic_ingredients = ["녹차추출물", "파라벤"]  # 알레르기나 기피 성분 리스트
     budget = 25000  # 예산 상한선
 
