@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     token_algorithm: str
     token_expire_minutes: int = 30
     google_client_id: str
-    google_client_secret: str
-    google_redirect_uri: str
+    google_client_key: str
+    openai_key: str
 
     class Config:
         env_file = ".env"
