@@ -1,6 +1,6 @@
-#services/auth.py
+# services/auth.py
 from core.security import create_access_token
-from schemas.user_schema import User
+from schemas.user import User
 import httpx
 from services.user import get_user_by_email, add_user
 from core.config import settings
@@ -11,6 +11,7 @@ GOOGLE_REDIRECT_URI = settings.google_redirect_uri
 GOOGLE_TOKEN_URL = settings.google_token_url
 GOOGLE_USERINFO_URL = settings.google_userinfo_url
 
+
 def google_login_url():
     google_auth_url = (
         "https://accounts.google.com/o/oauth2/v2/auth"
@@ -20,6 +21,7 @@ def google_login_url():
         f"&scope=openid%20email%20profile"
     )
     return google_auth_url
+
 
 async def google_callback_service(code: str):
     token_data = {

@@ -1,6 +1,8 @@
-import csv
 import collections
+import sys
 import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import re
 import time
 from tqdm import tqdm
@@ -11,6 +13,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+from db.database import products_collection
 
 if not hasattr(collections, "Callable"):
     collections.Callable = collections.abc.Callable  # type: ignore
@@ -235,28 +238,7 @@ def get_product_info(
                                     index + (page - 1) * 24
                                 )  # 페이지당 24개 가정
 
-                                # CSV에 기록
-                                with open(
-                                    filename, mode="a", newline="", encoding="utf-8-sig"
-                                ) as file:
-                                    writer = csv.DictWriter(
-                                        file,
-                                        fieldnames=[
-                                            "cosmetic_type",
-                                            "skin_type",
-                                            "rank",
-                                            "brand",
-                                            "name",
-                                            "original_price",
-                                            "selling_price",
-                                            "volume",
-                                            "ingredients",
-                                            "review_count",
-                                            "link",
-                                        ],
-                                        quoting=csv.QUOTE_NONNUMERIC,
-                                    )
-                                    writer.writerow(product_details)
+                                products_collection.insert_one(product_details)
 
                         except Exception as e:
                             error_message = f"Failed to process {full_product_url}: {e}"
@@ -314,34 +296,6 @@ def get_product_info(
 def main():
     filename = "data/oliveyoung_products_all.csv"
 
-    # CSV 파일 초기화 및 헤더 작성
-    file_exists = os.path.exists(filename)
-
-    # Open the file in 'a' mode if it exists, otherwise in 'w' mode to create a new one
-    with open(
-        filename, mode="a" if file_exists else "w", newline="", encoding="utf-8-sig"
-    ) as file:
-        fieldnames = [
-            "cosmetic_type",
-            "skin_type",
-            "rank",
-            "brand",
-            "name",
-            "original_price",
-            "selling_price",
-            "volume",
-            "ingredients",
-            "review_count",
-            "link",
-        ]
-        writer = csv.DictWriter(
-            file, fieldnames=fieldnames, quoting=csv.QUOTE_NONNUMERIC
-        )
-
-        # Only write the header if the file is being created
-        if not file_exists:
-            writer.writeheader()
-    # 모든 화장품 유형 및 피부 유형에 대해 스크래핑 수행
     for type_name, cat_list in cosmetic_types.items():
         cateId, cateId2 = cat_list
         for skin_type_name, skin_type_id in skin_types.items():
@@ -352,7 +306,6 @@ def main():
                 type_name, cateId, cateId2, skin_type_name, skin_type_id, filename
             )
 
-    # Selenium 드라이버 종료
     driver.quit()
 
 

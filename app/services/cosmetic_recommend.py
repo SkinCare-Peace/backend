@@ -1,17 +1,21 @@
+from fastapi import HTTPException
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from db.database import products_collection
+from schemas.recommendation import ProductRecommendation
+from typing import List
 
 
 def recommend_cosmetics(
-    csv_file_path,
-    user_skin_type,
-    user_concerns,
-    preferred_cosmetic_types,
-    allergic_ingredients,
-    budget,
-):
+    user_skin_type: str,
+    user_concerns: List[str],
+    preferred_cosmetic_types: List[str],
+    allergic_ingredients: List[str],
+    budget: int,
+) -> List[ProductRecommendation]:
     # 1. 데이터 로딩
-    df = pd.read_csv(csv_file_path)
+    cursor = products_collection.find()
+    df = pd.DataFrame(list(cursor))
 
     # 1.1 고민별 성분 데이터 로딩
     concern_ingredient_df = pd.read_csv(
@@ -61,8 +65,8 @@ def recommend_cosmetics(
     # 3.2.1 화장품 종류 필터링
     filtered_df = df[df["cosmetic_type"].isin(preferred_cosmetic_types)]
 
-    # 3.2.2 피부 타입 필터링
-    filtered_df = filtered_df[filtered_df["skin_type"] == user_skin_type.lower()]
+    # # 3.2.2 피부 타입 필터링
+    # filtered_df = filtered_df[filtered_df["skin_type"] == user_skin_type.lower()]
 
     # 3.2.3 알레르기 및 비선호 성분 필터링
     def contains_allergic_ingredient(ingredients, allergic_ingredients):
@@ -82,7 +86,7 @@ def recommend_cosmetics(
 
     if filtered_df.empty:
         print("조건에 맞는 제품이 없습니다.")
-        return
+        raise HTTPException(status_code=404, detail="No products found")
 
     # 3.3 스코어링 단계
     scaler = MinMaxScaler()
@@ -161,52 +165,23 @@ def recommend_cosmetics(
         / 28
         * 100
     )
-
-    # 5. 결과 출력
+    # 5. 결과 준비
     top_products = filtered_df.sort_values(by="total_score", ascending=False).head(5)
 
+    recommendations = []
     for index, product in top_products.iterrows():
-        print(f"제품명: {product['name']}")
-        print(f"브랜드: {product['brand']}")
-        print(f"판매가: {product['selling_price']}원")
-        print(f"링크: {product['link']}")
-        print(f"총점: {product['total_score']:.2f}")
+        recommendation = ProductRecommendation(
+            name=product["name"],
+            brand=product["brand"],
+            selling_price=product["selling_price"],
+            link=product["link"],
+            skin_type_score=product["skin_type_score"],
+            concern_score=product["concern_score"],
+            rank_score=product["rank_score"],
+            price_score=product["price_score"],
+            total_score=product["total_score"],
+            matching_ingredients=product["matching_ingredients"],
+        )
+        recommendations.append(recommendation)
 
-        # 추천 이유 표시
-        reasons = []
-        if product["skin_type_score"] == 1:
-            reasons.append("사용자의 피부 타입과 일치함")
-        if product["matched_concerns"]:
-            matching_concerns = ", ".join(product["matched_concerns"])
-            reasons.append(
-                f"피부 고민에 맞는 성분 포함 (고민 매칭): {matching_concerns}"
-            )
-        if product["matching_ingredients"]:
-            matching_ings = ", ".join(product["matching_ingredients"])
-            reasons.append(f"해당 성분 포함: {matching_ings}")
-        print("추천 이유:", "; ".join(reasons))
-        print("----------------------------------------------------")
-
-
-if __name__ == "__main__":
-    # csv_file_path: CSV 파일의 경로 또는 링크
-    csv_file_path = "data/oliveyoung_products_all.csv"
-
-    # 사용자 입력값 설정
-    user_skin_type = "건성"  # 사용자 피부 타입
-    user_concerns = [
-        "여드름",
-    ]  # 사용자 피부 고민 리스트
-    preferred_cosmetic_types = ["세럼"]  # 추천받고자 하는 화장품 종류 리스트
-    allergic_ingredients = ["녹차추출물", "파라벤"]  # 알레르기나 기피 성분 리스트
-    budget = 25000  # 예산 상한선
-
-    # 함수 호출
-    recommend_cosmetics(
-        csv_file_path,
-        user_skin_type,
-        user_concerns,
-        preferred_cosmetic_types,
-        allergic_ingredients,
-        budget,
-    )
+    return recommendations
