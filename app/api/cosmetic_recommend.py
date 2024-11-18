@@ -3,7 +3,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
 
-from schemas.recommendation import ProductRecommendation
+from schemas.cosmetic_recommendation import ProductRecommendation
 from services.cosmetic_recommend import recommend_cosmetics
 
 

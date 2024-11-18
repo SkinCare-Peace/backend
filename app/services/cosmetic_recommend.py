@@ -2,7 +2,7 @@ from fastapi import HTTPException
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from db.database import db
-from schemas.recommendation import ProductRecommendation
+from schemas.cosmetic_recommendation import ProductRecommendation
 from typing import List
 
 
