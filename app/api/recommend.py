@@ -14,7 +14,7 @@ router = APIRouter()
 def get_recommendations(
     user_skin_type: str,
     user_concerns: List[str],
-    preferred_cosmetic_types: List[str],
+    cosmetic_types: str,
     allergic_ingredients: List[str],
     budget: int,
 ):
@@ -25,7 +25,7 @@ def get_recommendations(
         recommendations = recommend_cosmetics(
             user_skin_type=user_skin_type,
             user_concerns=user_concerns,
-            preferred_cosmetic_types=preferred_cosmetic_types,
+            cosmetic_types=cosmetic_types,
             allergic_ingredients=allergic_ingredients,
             budget=budget,
         )

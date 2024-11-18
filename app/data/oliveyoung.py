@@ -13,7 +13,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-from db.database import products_collection
+from db.database import db
 
 if not hasattr(collections, "Callable"):
     collections.Callable = collections.abc.Callable  # type: ignore
@@ -238,7 +238,7 @@ def get_product_info(
                                     index + (page - 1) * 24
                                 )  # 페이지당 24개 가정
 
-                                products_collection.insert_one(product_details)
+                                db["oliveyoung_products"].insert_one(product_details)
 
                         except Exception as e:
                             error_message = f"Failed to process {full_product_url}: {e}"

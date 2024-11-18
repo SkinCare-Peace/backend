@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from db.database import products_collection
+from db.database import db
 from schemas.recommendation import ProductRecommendation
 from typing import List
 
@@ -9,19 +9,20 @@ from typing import List
 def recommend_cosmetics(
     user_skin_type: str,
     user_concerns: List[str],
-    preferred_cosmetic_types: List[str],
+    cosmetic_types: str,
     allergic_ingredients: List[str],
     budget: int,
 ) -> List[ProductRecommendation]:
     # 1. 데이터 로딩
-    cursor = products_collection.find()
+    cursor = db["oliveyoung_products"].find()
     df = pd.DataFrame(list(cursor))
 
     # 1.1 고민별 성분 데이터 로딩
-    concern_ingredient_df = pd.read_csv(
-        "data/ingredient_effectiveness_scores.csv", encoding="utf-8-sig"
-    )
+    concern_ingredient_df = pd.DataFrame(list(db["recommended_ing"].find()))
     concern_ingredient_df.fillna("", inplace=True)
+
+    print(df.head())
+    print(concern_ingredient_df.head())
     # 1.2 성분별 고민 매핑 딕셔너리 생성
     ingredient_effectiveness = {}
     for index, row in concern_ingredient_df.iterrows():
@@ -53,7 +54,7 @@ def recommend_cosmetics(
 
     # 2.5 성분 데이터 전처리
     df["ingredients_list"] = (
-        df["ingredients"].str.replace("[^\w\s|]", "", regex=True).str.split("\|")
+        df["ingredients"].str.replace(r"[^\w\s|]", "", regex=True).str.split(r"\|")
     )
     df["ingredients_list"] = df["ingredients_list"].apply(
         lambda x: [ingredient.strip().lower() for ingredient in x]
@@ -63,7 +64,7 @@ def recommend_cosmetics(
 
     # 3.2 필터링 단계
     # 3.2.1 화장품 종류 필터링
-    filtered_df = df[df["cosmetic_type"].isin(preferred_cosmetic_types)]
+    filtered_df = df[df["cosmetic_type"].isin([cosmetic_types])]
 
     # # 3.2.2 피부 타입 필터링
     # filtered_df = filtered_df[filtered_df["skin_type"] == user_skin_type.lower()]

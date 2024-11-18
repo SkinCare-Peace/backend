@@ -5,9 +5,8 @@ from core.config import settings
 MONGO_URI = settings.mongo_uri
 
 client = MongoClient(MONGO_URI)
-db = client["face_analysis"]
+db = client["peace"]
 users_collection = db["users"]
-products_collection = db["products"]
 
 
 async def create_indexes():
