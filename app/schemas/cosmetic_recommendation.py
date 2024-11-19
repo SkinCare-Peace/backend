@@ -1,7 +1,7 @@
 # schemas/recommendation.py
 
 from pydantic import BaseModel
-from typing import List
+from typing import Dict, List
 
 
 class ProductRecommendation(BaseModel):
@@ -14,4 +14,5 @@ class ProductRecommendation(BaseModel):
     rank_score: float
     price_score: float
     total_score: float
-    matching_ingredients: List[str]
+    matching_ingredients: Dict[str, Dict[str, int]]
+    reason: str = ""

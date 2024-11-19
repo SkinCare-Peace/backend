@@ -5,9 +5,24 @@ from fastapi import APIRouter, HTTPException
 
 from schemas.cosmetic_recommendation import ProductRecommendation
 from services.cosmetic_recommend import recommend_cosmetics
-
+import traceback
 
 router = APIRouter()
+
+function_schema = {
+    "name": "generate_recommendation_reason",
+    "description": "사용자의 피부 타입과 고민, 제품 정보를 기반으로 추천 이유를 생성합니다.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "reason": {
+                "type": "string",
+                "description": "제품을 추천하는 이유",
+            },
+        },
+        "required": ["reason"],
+    },
+}
 
 
 @router.post("/recommend", response_model=List[ProductRecommendation])
@@ -39,4 +54,4 @@ def get_recommendations(
         raise e
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(traceback.format_exc())

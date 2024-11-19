@@ -1,9 +1,31 @@
+import json
 from fastapi import HTTPException
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from db.database import db
 from schemas.cosmetic_recommendation import ProductRecommendation
-from typing import List
+from typing import Dict, List
+from collections import defaultdict
+from core.config import settings
+from openai import OpenAI
+
+OPENAI_KEY = settings.openai_key
+
+client = OpenAI(api_key=OPENAI_KEY)
+function_schema = {
+    "name": "generate_recommendation_reason",
+    "description": "사용자의 피부 타입과 고민, 제품 정보를 기반으로 추천 이유를 생성합니다.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "reason": {
+                "type": "string",
+                "description": "제품을 추천하는 이유",
+            },
+        },
+        "required": ["reason"],
+    },
+}
 
 
 def recommend_cosmetics(
@@ -18,11 +40,9 @@ def recommend_cosmetics(
     df = pd.DataFrame(list(cursor))
 
     # 1.1 고민별 성분 데이터 로딩
-    concern_ingredient_df = pd.DataFrame(list(db["recommended_ing"].find()))
+    concern_ingredient_df = pd.DataFrame(list(db["ing_concern_score"].find()))
     concern_ingredient_df.fillna("", inplace=True)
 
-    print(df.head())
-    print(concern_ingredient_df.head())
     # 1.2 성분별 고민 매핑 딕셔너리 생성
     ingredient_effectiveness = {}
     for index, row in concern_ingredient_df.iterrows():
@@ -66,9 +86,6 @@ def recommend_cosmetics(
     # 3.2.1 화장품 종류 필터링
     filtered_df = df[df["cosmetic_type"].isin([cosmetic_types])]
 
-    # # 3.2.2 피부 타입 필터링
-    # filtered_df = filtered_df[filtered_df["skin_type"] == user_skin_type.lower()]
-
     # 3.2.3 알레르기 및 비선호 성분 필터링
     def contains_allergic_ingredient(ingredients, allergic_ingredients):
         return any(
@@ -76,6 +93,8 @@ def recommend_cosmetics(
             for allergic in allergic_ingredients
             for ingredient in ingredients
         )
+
+    print(filtered_df["ingredients_list"])
 
     filtered_df["has_allergic"] = filtered_df["ingredients_list"].apply(
         lambda x: contains_allergic_ingredient(x, allergic_ingredients)
@@ -103,8 +122,7 @@ def recommend_cosmetics(
     # 3.3.2 피부 고민 및 피부 타입 매칭 점수
     def concern_match_score(ingredients, user_concerns):
         total_effectiveness = 0
-        matching_ingredients = set()
-        matched_concerns = set()
+        matching_ingredients: Dict[str, Dict[str, int]] = defaultdict(dict)
 
         for ingredient in ingredients:
             for concern in user_concerns:
@@ -113,17 +131,17 @@ def recommend_cosmetics(
                 )
                 total_effectiveness += effectiveness
                 if effectiveness > 0:
-                    matching_ingredients.add(ingredient)
-                    matched_concerns.add(concern)
+                    matching_ingredients[concern][ingredient] = effectiveness
 
-        max_total = len(user_concerns) * 5  # 각 고민당 최대 5점
-        total_effectiveness = min(
-            total_effectiveness, max_total
-        )  # 최대 총점을 초과하지 않도록 캡핑
+        # max_total = len(user_concerns) * 5  # 각 고민당 최대 5점
+        # total_effectiveness = min(
+        #     total_effectiveness, max_total
+        # )  # 최대 총점을 초과하지 않도록 캡핑
 
-        concern_score = total_effectiveness / max_total if max_total else 0
+        # concern_score = total_effectiveness / max_total if max_total else 0
 
-        return concern_score, matched_concerns, matching_ingredients
+        # return concern_score, matching_ingredients
+        return total_effectiveness, matching_ingredients
 
     # 3. 함수 적용 및 개별 점수 저장
     filtered_df["skin_type_score"] = filtered_df["skin_type"].apply(
@@ -136,9 +154,9 @@ def recommend_cosmetics(
     concern_results = filtered_df["ingredients_list"].apply(
         lambda x: concern_match_score(x, user_concerns)
     )
-    filtered_df["concern_score"] = concern_results.apply(lambda x: x[0])
-    filtered_df["matched_concerns"] = concern_results.apply(lambda x: x[1])
-    filtered_df["matching_ingredients"] = concern_results.apply(lambda x: list(x[2]))
+    concern_scores = pd.DataFrame(concern_results.apply(lambda x: x[0]))
+    filtered_df["concern_score"] = scaler.fit_transform(concern_scores)
+    filtered_df["matching_ingredients"] = concern_results.apply(lambda x: x[1])
 
     # 4. 총점 계산
     # 새로운 가중치 설정
@@ -167,10 +185,48 @@ def recommend_cosmetics(
         * 100
     )
     # 5. 결과 준비
-    top_products = filtered_df.sort_values(by="total_score", ascending=False).head(5)
+    top_products = filtered_df.sort_values(by="total_score", ascending=False).head(3)
 
     recommendations = []
     for index, product in top_products.iterrows():
+        prompt = f"""
+        당신은 전문적인 스킨케어 컨설턴트입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:
+
+        사용자 피부 타입: {user_skin_type}
+        사용자 피부 고민: {', '.join(user_concerns)}
+        제품명: {product['name']}
+        브랜드: {product['brand']}
+        피부 타입 점수: {product['skin_type_score']}
+        피부 고민 점수: {product['concern_score']}
+        순위 점수: {product['rank_score']}
+        가격 점수: {product['price_score']}
+        매칭된 성분: {product['matching_ingredients']}
+
+        추천 이유는 제품이 사용자의 피부 타입과 고민에 어떻게 부합하는지, 매칭된 성분과 전반적인 이점을 강조하여 작성해 주세요.
+        모든 점수는 0부터 1까지 이루어진다.
+        
+        응답은 한국어로 한다. 문장은 -습니다 체로 작성한다. 친근하게, 최소 1줄 최대 2줄로 작성한다.
+        제품명을 이유에 언급하지 않는다. 성분을 근거로 한 설명만을 작성한다. 구체적인 점수는 언급하지 않는다.
+        """
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "당신은 전문적인 스킨케어 컨설턴트입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            functions=[function_schema],  # type: ignore
+            function_call={"name": "generate_recommendation_reason"},
+        )
+        response = response.choices[0].message.function_call
+        if not response:
+            raise HTTPException(
+                status_code=500, detail="Failed to generate recommendation reason"
+            )
+        reason = json.loads(response.arguments)["reason"]
+
         recommendation = ProductRecommendation(
             name=product["name"],
             brand=product["brand"],
@@ -182,6 +238,7 @@ def recommend_cosmetics(
             price_score=product["price_score"],
             total_score=product["total_score"],
             matching_ingredients=product["matching_ingredients"],
+            reason=reason,
         )
         recommendations.append(recommendation)
 
