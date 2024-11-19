@@ -2,6 +2,7 @@
 from pydantic import BaseModel
 from typing import Dict, Optional
 
+
 class PredictionResponse(BaseModel):
     predicted_class: Optional[int] = None
     predicted_label: Optional[str] = None
