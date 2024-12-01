@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    checkpoint_dir: str = "checkpoint"
+    checkpoint_dir: str = "checkpoints"
     mongo_uri: str
     token_secret: str
     token_algorithm: str
@@ -16,4 +16,4 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
-settings = Settings()
+settings = Settings()  # type: ignore
