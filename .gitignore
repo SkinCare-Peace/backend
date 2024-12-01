@@ -72,3 +72,12 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+
+# model checkpoints
+checkpoints/
+
+# csv 파일
+*.csv
+
+# 에러 로그
+error_log.txt
