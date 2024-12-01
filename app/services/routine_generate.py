@@ -16,7 +16,7 @@ def get_time_level(time_minutes):
 
 
 def get_money_level(money_won):
-    if money_won < 30000:
+    if money_won < 50000:
         return "low"
     elif money_won <= 100000:
         return "medium"

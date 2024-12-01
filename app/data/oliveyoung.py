@@ -2,6 +2,9 @@ import collections
 import sys
 import os
 
+import gridfs
+import requests
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import re
 import time
@@ -14,6 +17,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from db.database import db
+from urllib.parse import urljoin
 
 if not hasattr(collections, "Callable"):
     collections.Callable = collections.abc.Callable  # type: ignore
@@ -24,6 +28,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
 )
 
+fs = gridfs.GridFS(db)
 
 # Chrome 드라이버 초기화
 driver = webdriver.Chrome()
@@ -161,6 +166,33 @@ def get_product_details(detail_url):
         else:
             review_count = 0
 
+        # 이미지 URL 추출 및 이미지 데이터 저장
+        image_elem = soup.select_one("#mainImg")
+        if image_elem and "src" in image_elem.attrs:
+            image_url = image_elem["src"]
+            if isinstance(image_url, list):
+                image_url = image_url[0]
+            # 이미지 URL이 상대경로일 경우 절대경로로 변환
+            if not image_url.startswith("http"):
+                image_url = urljoin(detail_url, image_url)
+            # 이미지 다운로드 및 MongoDB에 저장
+            try:
+                image_response = requests.get(image_url)
+                image_data = image_response.content
+
+                # 이미지 데이터를 GridFS에 저장
+                image_filename = image_url.split("/")[-1]
+                image_id = fs.put(image_data, filename=image_filename)
+
+            except Exception as e:
+                logging.error(
+                    f"Failed to download or store image from {image_url}: {e}"
+                )
+                image_id = None
+        else:
+            image_url = "N/A"
+            image_id = None
+
         return {
             "brand": brand,
             "name": cleaned_name,
@@ -170,6 +202,8 @@ def get_product_details(detail_url):
             "ingredients": ingredients,
             "review_count": review_count,
             "link": detail_url,
+            "image_url": image_url,
+            "image_id": image_id,
         }
     except Exception as e:
         error_message = f"Failed to process {detail_url}: {str(e)}"
@@ -238,7 +272,7 @@ def get_product_info(
                                     index + (page - 1) * 24
                                 )  # 페이지당 24개 가정
 
-                                db["oliveyoung_products"].insert_one(product_details)
+                                db["oliveyoung_products"].insert_one(product_details)  # type: ignore
 
                         except Exception as e:
                             error_message = f"Failed to process {full_product_url}: {e}"
