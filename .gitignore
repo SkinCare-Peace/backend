@@ -1,0 +1,74 @@
+# Python 관련 파일들
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# 가상 환경 폴더
+.venv/
+env/
+venv/
+ENV/
+venv.bak/
+*.env
+
+# 환경 설정 파일
+.env            # 환경 변수 파일
+*.env.*
+
+# 테스트 커버리지 리포트
+htmlcov/
+.coverage
+.coverage.*
+
+# pytest 관련 파일들
+.cache/
+pytest_cache/
+
+# Jupyter Notebook 관련
+.ipynb_checkpoints/
+
+# mypy 타입 검사 관련
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# IDE 및 에디터 관련 파일들
+.idea/
+.vscode/
+*.swp
+*~
+
+# 로그 및 임시 파일들
+logs/
+*.log
+*.pid
+*.out
+*.err
+*.db
+
+# 배포 관련 파일
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Docker 관련 파일들
+docker-compose.override.yml
+.dockerignore
+
+# Alembic (DB 마이그레이션) 관련 파일들
+alembic/versions/*.pyc
+
+# 시스템에서 생성된 파일들
+.DS_Store
+Thumbs.db
+
+# Coverage 관련 파일들
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
