@@ -1,10 +1,11 @@
 # schemas/recommendation.py
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List
 
 
 class ProductRecommendation(BaseModel):
+    id: str = Field(..., alias="_id")
     name: str
     brand: str
     selling_price: int
@@ -16,3 +17,4 @@ class ProductRecommendation(BaseModel):
     total_score: float
     matching_ingredients: Dict[str, Dict[str, int]]
     reason: str = ""
+    image_url: str
