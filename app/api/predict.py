@@ -2,15 +2,17 @@
 
 import traceback
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
-from typing import List
 from services.predict import predict_image
 from schemas.prediction import PredictionResponse
-import json
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/predict",
+    tags=["Predict"],
+    responses={404: {"description": "Not found"}},
+)
 
 
-@router.post("/predict/{area_name}", response_model=PredictionResponse)
+@router.post("/{area_name}", response_model=PredictionResponse)
 async def predict(area_name: str, bbox: str = Form(...), file: UploadFile = File(...)):
     try:
         bbox_list = [int(x.strip()) for x in bbox.split(",")]

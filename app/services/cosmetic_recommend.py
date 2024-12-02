@@ -3,7 +3,7 @@ from fastapi import HTTPException
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from db.database import db
-from schemas.cosmetic_recommendation import ProductRecommendation
+from schemas.cosmetics import ProductRecommendation
 from typing import Dict, List
 from collections import defaultdict
 from core.config import settings
@@ -28,7 +28,7 @@ function_schema = {
 }
 
 
-def recommend_cosmetics(
+async def recommend_cosmetics(
     user_skin_type: str,
     user_concerns: List[str],
     cosmetic_types: str,
@@ -37,10 +37,15 @@ def recommend_cosmetics(
 ) -> List[ProductRecommendation]:
     # 1. 데이터 로딩
     cursor = db["oliveyoung_products"].find()
-    df = pd.DataFrame(list(cursor))
+    products = await cursor.to_list(length=None)
+    df = pd.DataFrame(products)
 
     # 1.1 고민별 성분 데이터 로딩
-    concern_ingredient_df = pd.DataFrame(list(db["ing_concern_score"].find()))
+    concern_ingredient_cursor = db["ing_concern_score"].find()
+    concern_ingredients: List[Dict] = await concern_ingredient_cursor.to_list(
+        length=None
+    )
+    concern_ingredient_df = pd.DataFrame(concern_ingredients)
     concern_ingredient_df.fillna("", inplace=True)
 
     # 1.2 성분별 고민 매핑 딕셔너리 생성
@@ -190,7 +195,7 @@ def recommend_cosmetics(
     recommendations = []
     for index, product in top_products.iterrows():
         prompt = f"""
-        당신은 전문적인 스킨케어 컨설턴트입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:
+        당신은 전문적인 스킨케어 컨설턴트이며, 비둘기 캐릭터입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:
 
         사용자 피부 타입: {user_skin_type}
         사용자 피부 고민: {', '.join(user_concerns)}
@@ -205,15 +210,16 @@ def recommend_cosmetics(
         추천 이유는 제품이 사용자의 피부 타입과 고민에 어떻게 부합하는지, 매칭된 성분과 전반적인 이점을 강조하여 작성해 주세요.
         모든 점수는 0부터 1까지 이루어진다.
         
-        응답은 한국어로 한다. 문장은 -습니다 체로 작성한다. 친근하게, 최소 1줄 최대 2줄로 작성한다.
+        응답은 한국어로 한다. 최소 1줄 최대 2줄로 작성한다. 문장은 '-요'체로 작성한다.
         제품명을 이유에 언급하지 않는다. 성분을 근거로 한 설명만을 작성한다. 구체적인 점수는 언급하지 않는다.
+        ex) '건성 피부에 적합한 히알루론산이 함유되어 있고, 여드름 고민 해결에 도움이되는 샐리실릭산이 함유되어 있어요.'
         """
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
                     "role": "system",
-                    "content": "당신은 전문적인 스킨케어 컨설턴트입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:",
+                    "content": "당신은 전문적인 스킨케어 컨설턴트이며, 비둘기 캐릭터입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -228,6 +234,7 @@ def recommend_cosmetics(
         reason = json.loads(response.arguments)["reason"]
 
         recommendation = ProductRecommendation(
+            _id=str(product["_id"]),
             name=product["name"],
             brand=product["brand"],
             selling_price=product["selling_price"],
@@ -239,7 +246,7 @@ def recommend_cosmetics(
             total_score=product["total_score"],
             matching_ingredients=product["matching_ingredients"],
             reason=reason,
-            image_url=product.get("image_url", ""),
+            img_url=product.get("image_url", ""),
         )
         recommendations.append(recommendation)
 
