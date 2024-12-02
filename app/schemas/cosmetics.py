@@ -8,7 +8,7 @@ class ProductBase(BaseModel):
     id: str = Field(..., alias="_id")
     name: str
     brand: str
-    img_url: str = ""
+    img_url: str = Field(..., alias="image_url")
 
     class Config:
         populate_by_name = True
