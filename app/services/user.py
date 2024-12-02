@@ -1,47 +1,86 @@
-# services/user.py
-from core.security import decode_access_token
-from schemas.user import User
-
-from pymongo.errors import DuplicateKeyError
+from typing import Optional, List
+from bson import ObjectId
+from schemas.user import UserCreate, UserUpdate, User
+from datetime import datetime
+from pymongo.errors import PyMongoError
 from db.database import get_db
 
-# MongoDB 설정
 db = get_db()
-users_collection = db["users"]
+user_collection = db["users"]
 
 
-# MongoDB에 사용자를 추가
-async def add_user(user_data: User):
+async def create_user(user_create: UserCreate) -> User:
     try:
-        user = await users_collection.insert_one(user_data.model_dump())
-        return user.inserted_id
-    except DuplicateKeyError:
+        user_dict = user_create.model_dump(by_alias=True)
+        user_dict["created_at"] = datetime.now()
+        user_dict["updated_at"] = datetime.now()
+
+        # 해시된 비밀번호를 hashed_password 필드에 저장하고 password 필드는 제거
+        user_dict["hashed_password"] = user_dict.pop("password")
+
+        result = await user_collection.insert_one(user_dict)
+        created_user = await user_collection.find_one({"_id": result.inserted_id})
+        if created_user:
+            created_user["_id"] = str(created_user["_id"])
+            return User(**created_user)
+        else:
+            raise Exception("User creation failed")
+
+    except PyMongoError as e:
+        raise Exception(f"Database error: {e}")
+
+
+async def get_user_by_id(user_id: str) -> Optional[User]:
+    try:
+        if not ObjectId.is_valid(user_id):
+            return None
+        user = await user_collection.find_one({"_id": ObjectId(user_id)})
+        if user:
+            user["_id"] = str(user["_id"])
+            return User(**user)
         return None
+    except PyMongoError as e:
+        raise Exception(f"Database error: {e}")
 
 
-# 이메일로 사용자 검색
-async def get_user_by_email(email: str):
-    user = await users_collection.find_one({"email": email})
-    return user
+async def get_user_by_email(email: str) -> Optional[User]:
+    try:
+        user = await user_collection.find_one({"email": email})
+        if user:
+            user["_id"] = str(user["_id"])
+            return User(**user)
+        return None
+    except PyMongoError as e:
+        raise Exception(f"Database error: {e}")
 
 
-# 사용자 정보 업데이트
-async def update_user(email: str, data: dict):
-    updated_user = await users_collection.update_one({"email": email}, {"$set": data})
-    return updated_user
+async def update_user(user_id: str, user_update: UserUpdate) -> Optional[User]:
+    try:
+        if not ObjectId.is_valid(user_id):
+            return None
+        update_data = user_update.model_dump(exclude_unset=True, by_alias=True)
+        if "password" in update_data:
+            update_data["hashed_password"] = update_data.pop("password")
+        update_data["updated_at"] = datetime.now()
+
+        result = await user_collection.update_one(
+            {"_id": ObjectId(user_id)}, {"$set": update_data}
+        )
+        if result.modified_count == 1:
+            updated_user = await user_collection.find_one({"_id": ObjectId(user_id)})
+            if updated_user:
+                updated_user["_id"] = str(updated_user["_id"])
+                return User(**updated_user)
+        return None
+    except PyMongoError as e:
+        raise Exception(f"Database error: {e}")
 
 
-async def get_current_user(token: str):
-    payload = decode_access_token(token)
-    if payload is None:
-        raise Exception("Could not validate credentials")
-    email = payload.get("sub")
-
-    if email is None:
-        raise Exception("Could not validate credentials")
-
-    user = await get_user_by_email(email)
-    if user is None:
-        raise Exception("User not found")
-
-    return user
+async def delete_user(user_id: str) -> bool:
+    try:
+        if not ObjectId.is_valid(user_id):
+            return False
+        result = await user_collection.delete_one({"_id": ObjectId(user_id)})
+        return result.deleted_count == 1
+    except PyMongoError as e:
+        raise Exception(f"Database error: {e}")

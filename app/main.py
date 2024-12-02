@@ -1,16 +1,15 @@
 # main.py
 import uvicorn
 from fastapi import FastAPI
-from api import cosmetic_recommend, predict, routine_generate, search_cosmetic
+from api import cosmetics, predict, routine_generate, user
 from services.model_loader import load_models
-import pprint
 
 app = FastAPI()
 
 app.include_router(predict.router)
-app.include_router(cosmetic_recommend.router)
 app.include_router(routine_generate.router)
-app.include_router(search_cosmetic.router)
+app.include_router(cosmetics.router)
+app.include_router(user.router)
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ function_schema = {
 }
 
 
-def recommend_cosmetics(
+async def recommend_cosmetics(
     user_skin_type: str,
     user_concerns: List[str],
     cosmetic_types: str,
@@ -37,10 +37,15 @@ def recommend_cosmetics(
 ) -> List[ProductRecommendation]:
     # 1. 데이터 로딩
     cursor = db["oliveyoung_products"].find()
-    df = pd.DataFrame(list(cursor))
+    products = await cursor.to_list(length=None)
+    df = pd.DataFrame(products)
 
     # 1.1 고민별 성분 데이터 로딩
-    concern_ingredient_df = pd.DataFrame(list(db["ing_concern_score"].find()))
+    concern_ingredient_cursor = db["ing_concern_score"].find()
+    concern_ingredients: List[Dict] = await concern_ingredient_cursor.to_list(
+        length=None
+    )
+    concern_ingredient_df = pd.DataFrame(concern_ingredients)
     concern_ingredient_df.fillna("", inplace=True)
 
     # 1.2 성분별 고민 매핑 딕셔너리 생성
