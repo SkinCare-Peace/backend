@@ -32,6 +32,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     skin_type: Optional[str] = None
     skin_concerns: Optional[List[str]] = None
+    avoid_ingredients: Optional[Dict[str, Dict[str, int]]] = None
     password: Optional[str] = None  # 업데이트 시 비밀번호 변경 가능
 
     @field_validator("password", mode="before")
