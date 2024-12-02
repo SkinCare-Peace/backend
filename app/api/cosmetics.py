@@ -1,14 +1,13 @@
 # api/cosmetic.py
 
-import unicodedata
-from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
 from db.database import get_db
-from pydantic import BaseModel, Field
-from schemas.cosmetic_recommendation import ProductRecommendation
+from schemas.cosmetics import ProductRecommendation
 from services.cosmetic_recommend import recommend_cosmetics
 import traceback
+from schemas.cosmetics import CosmeticSearchResult
+from services.cosmetic_services import search_by_id, search_cosmetics
 
 router = APIRouter(
     prefix="/cosmetics",
@@ -16,6 +15,25 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 db = get_db()
+
+
+@router.get("/", response_model=List[CosmeticSearchResult])
+async def search_cosmetics_by_name(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(10, gt=0),
+):
+    """
+    화장품 이름으로 검색합니다.
+    """
+    return await search_cosmetics(db, q, limit)
+
+
+@router.get("/{product_id}", response_model=CosmeticSearchResult)
+async def search_cosmetic_by_id(product_id: str):
+    """
+    화장품 ID로 검색합니다.
+    """
+    return await search_by_id(db, product_id)
 
 
 @router.post("/recommendation", response_model=List[ProductRecommendation])
@@ -48,85 +66,3 @@ def get_recommendations(
 
     except Exception as e:
         print(traceback.format_exc())
-
-
-class CosmeticSearchResult(BaseModel):
-    id: str = Field(..., alias="_id")
-    name: str
-    brand: str
-    image_url: str = ""
-
-
-def normalize_text(text):
-    return unicodedata.normalize("NFC", text)
-
-
-@router.get("/", response_model=List[CosmeticSearchResult])
-async def search_cosmetics_by_name(
-    q: str = Query(..., min_length=1),
-    limit: int = Query(10, gt=0),
-):
-    """
-    화장품 이름으로 검색합니다.
-    """
-    # 검색어 정규화
-    q_normalized = normalize_text(q)
-
-    # 텍스트 검색 및 결과 처리
-    pipeline = [
-        {"$match": {"name": {"$regex": q_normalized, "$options": "i"}}},
-        {"$sort": {"rank": 1}},  # rank를 기준으로 오름차순 정렬
-        {
-            "$group": {
-                "_id": "$name",  # 이름으로 그룹화하여 중복 제거
-                "doc": {"$first": "$$ROOT"},
-            }
-        },
-        {"$replaceRoot": {"newRoot": "$doc"}},
-        {"$limit": limit},  # 결과 개수 제한
-        {
-            "$project": {
-                "_id": 1,
-                "name": 1,
-                "brand": 1,
-                "image_url": 1,
-            }
-        },
-    ]
-
-    cursor = db["oliveyoung_products"].aggregate(pipeline)
-    results = await cursor.to_list(length=None)
-
-    if not results:
-        raise HTTPException(status_code=404, detail="조건에 맞는 제품이 없습니다.")
-
-    for result in results:
-        result["_id"] = str(result["_id"])
-
-    return results
-
-
-@router.get("/{product_id}", response_model=CosmeticSearchResult)
-async def search_by_id(product_id: str):
-    """
-    화장품 ID로 검색합니다.
-    """
-    # MongoDB ObjectId로 변환
-    try:
-        object_id = ObjectId(product_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="유효하지 않은 ID 형식입니다.")
-
-    # ID로 검색
-    product = await db["oliveyoung_products"].find_one(
-        {"_id": object_id},
-        {"_id": 1, "name": 1, "brand": 1, "image_url": 1},
-    )
-
-    if not product:
-        raise HTTPException(status_code=404, detail="조건에 맞는 제품이 없습니다.")
-
-    # ObjectId를 문자열로 변환
-    product["_id"] = str(product["_id"])
-
-    return product

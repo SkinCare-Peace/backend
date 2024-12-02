@@ -6,8 +6,7 @@ import torch.nn as nn
 from torchvision import models
 from core.config import settings
 import numpy as np
-from enum import Enum
-from data.class_labels import regression_labels, class_labels
+from data.class_labels import regression_labels
 
 
 classification_models = {}

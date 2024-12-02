@@ -3,7 +3,7 @@ from fastapi import HTTPException
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from db.database import db
-from schemas.cosmetic_recommendation import ProductRecommendation
+from schemas.cosmetics import ProductRecommendation
 from typing import Dict, List
 from collections import defaultdict
 from core.config import settings
@@ -246,7 +246,7 @@ async def recommend_cosmetics(
             total_score=product["total_score"],
             matching_ingredients=product["matching_ingredients"],
             reason=reason,
-            image_url=product.get("image_url", ""),
+            img_url=product.get("image_url", ""),
         )
         recommendations.append(recommendation)
 

@@ -1,13 +1,20 @@
-# schemas/recommendation.py
+# schemas/cosmetics.py
 
 from pydantic import BaseModel, Field
 from typing import Dict, List
 
 
-class ProductRecommendation(BaseModel):
+class ProductBase(BaseModel):
     id: str = Field(..., alias="_id")
     name: str
     brand: str
+    img_url: str = ""
+
+    class Config:
+        populate_by_name = True
+
+
+class ProductRecommendation(ProductBase):
     selling_price: int
     link: str
     skin_type_score: float
@@ -17,7 +24,8 @@ class ProductRecommendation(BaseModel):
     total_score: float
     matching_ingredients: Dict[str, Dict[str, int]]
     reason: str = ""
-    image_url: str
 
-    class Config:
-        populate_by_name = True
+
+class CosmeticSearchResult(ProductBase):
+    price: int = Field(..., alias="selling_price")
+    volume: str

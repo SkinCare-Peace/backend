@@ -2,14 +2,12 @@ from pydantic import (
     BaseModel,
     EmailStr,
     Field,
-    GetCoreSchemaHandler,
     field_validator,
 )
-from typing import Any, List, Optional, Dict
+from typing import List, Optional, Dict
 from datetime import datetime
 from bson import ObjectId
 from passlib.context import CryptContext
-from pydantic_core import core_schema
 
 # 비밀번호 암호화를 위한 컨텍스트 설정
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
