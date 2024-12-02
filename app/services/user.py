@@ -3,16 +3,17 @@ from core.security import decode_access_token
 from schemas.user import User
 
 from pymongo.errors import DuplicateKeyError
-from db.database import users_collection
-from pymongo.results import InsertOneResult
+from db.database import get_db
+
+# MongoDB 설정
+db = get_db()
+users_collection = db["users"]
 
 
 # MongoDB에 사용자를 추가
 async def add_user(user_data: User):
     try:
-        user: InsertOneResult = await users_collection.insert_one(
-            user_data.model_dump()
-        )
+        user = await users_collection.insert_one(user_data.model_dump())
         return user.inserted_id
     except DuplicateKeyError:
         return None

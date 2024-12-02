@@ -229,6 +229,7 @@ def recommend_cosmetics(
         reason = json.loads(response.arguments)["reason"]
 
         recommendation = ProductRecommendation(
+            _id=str(product["_id"]),
             name=product["name"],
             brand=product["brand"],
             selling_price=product["selling_price"],

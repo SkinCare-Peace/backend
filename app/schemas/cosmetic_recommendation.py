@@ -18,3 +18,6 @@ class ProductRecommendation(BaseModel):
     matching_ingredients: Dict[str, Dict[str, int]]
     reason: str = ""
     image_url: str
+
+    class Config:
+        allow_population_by_field_name = True

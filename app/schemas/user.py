@@ -33,20 +33,25 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
-    profile_picture_url: Optional[str] = None
     skin_type: Optional[str] = None
     skin_concerns: Optional[List[str]] = None
 
 
 class User(UserBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    google_id: str
     skin_type: Optional[str] = None
     skin_concerns: Optional[List[str]] = None
-    preferences: Optional[dict] = None
+    avoid_ingredients: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        allow_population_by_field_name = True
+
+
+class UserRoutine(BaseModel):
+    user: User
+    routine: List[str]
+
+    class Config:
         allow_population_by_field_name = True

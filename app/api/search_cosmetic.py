@@ -4,10 +4,11 @@ import unicodedata
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
-from db.database import db
+from db.database import get_db
 from pydantic import BaseModel, Field
 
 router = APIRouter()
+db = get_db()
 
 
 class CosmeticSearchResult(BaseModel):
@@ -22,7 +23,7 @@ def normalize_text(text):
 
 
 @router.get("/cosmetics", response_model=List[CosmeticSearchResult])
-def search_cosmetics_by_name(
+async def search_cosmetics_by_name(
     q: str = Query(..., min_length=1),
     limit: int = Query(10, gt=0),
 ):
@@ -55,7 +56,7 @@ def search_cosmetics_by_name(
     ]
 
     cursor = db["oliveyoung_products"].aggregate(pipeline)
-    results = list(cursor)
+    results = await cursor.to_list(length=None)
 
     if not results:
         raise HTTPException(status_code=404, detail="조건에 맞는 제품이 없습니다.")
@@ -67,7 +68,7 @@ def search_cosmetics_by_name(
 
 
 @router.get("/cosmetics/{product_id}", response_model=CosmeticSearchResult)
-def search_by_id(product_id: str):
+async def search_by_id(product_id: str):
     """
     화장품 ID로 검색합니다.
     """
@@ -78,7 +79,7 @@ def search_by_id(product_id: str):
         raise HTTPException(status_code=400, detail="유효하지 않은 ID 형식입니다.")
 
     # ID로 검색
-    product = db["oliveyoung_products"].find_one(
+    product = await db["oliveyoung_products"].find_one(
         {"_id": object_id},
         {"_id": 1, "name": 1, "brand": 1, "image_url": 1},
     )

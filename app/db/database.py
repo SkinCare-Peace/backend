@@ -1,13 +1,19 @@
 # db/database.py
-from pymongo import ASCENDING, MongoClient
+from pymongo import ASCENDING
 from core.config import settings
+
+from motor.motor_asyncio import AsyncIOMotorClient
 
 MONGO_URI = settings.mongo_uri
 
-client = MongoClient(MONGO_URI)
+client = AsyncIOMotorClient(MONGO_URI)
 db = client["peace"]
 users_collection = db["users"]
 
 
 async def create_indexes():
-    users_collection.create_index([("email", ASCENDING)], unique=True)
+    await users_collection.create_index([("email", ASCENDING)], unique=True)
+
+
+def get_db():
+    return db
