@@ -37,7 +37,7 @@ async def search_cosmetic_by_id(product_id: str):
 
 
 @router.post("/recommendation", response_model=List[ProductRecommendation])
-def get_recommendations(
+async def get_recommendations(
     user_skin_type: str,
     user_concerns: List[str],
     cosmetic_types: str,
@@ -48,7 +48,7 @@ def get_recommendations(
     사용자 피부 타입, 고민, 선호 화장품 종류, 알레르기 성분, 예산을 입력받아 화장품을 추천합니다.
     """
     try:
-        recommendations = recommend_cosmetics(
+        recommendations = await recommend_cosmetics(
             user_skin_type=user_skin_type,
             user_concerns=user_concerns,
             cosmetic_types=cosmetic_types,
