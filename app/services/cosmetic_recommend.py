@@ -99,8 +99,6 @@ async def recommend_cosmetics(
             for ingredient in ingredients
         )
 
-    print(filtered_df["ingredients_list"])
-
     filtered_df["has_allergic"] = filtered_df["ingredients_list"].apply(
         lambda x: contains_allergic_ingredient(x, allergic_ingredients)
     )
