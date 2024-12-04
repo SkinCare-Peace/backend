@@ -1,3 +1,4 @@
+import asyncio
 import collections
 import sys
 import os
@@ -16,8 +17,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-from db.database import db
+from db.database import get_db
 from urllib.parse import urljoin
+from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 
 if not hasattr(collections, "Callable"):
     collections.Callable = collections.abc.Callable  # type: ignore
@@ -28,7 +30,9 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
 )
 
-fs = gridfs.GridFS(db)
+db = get_db()
+
+fs = AsyncIOMotorGridFSBucket(db)
 
 # Chrome 드라이버 초기화
 driver = webdriver.Chrome()
@@ -70,7 +74,7 @@ skin_types = {
 
 
 # 제품 상세 정보 추출 함수
-def get_product_details(detail_url):
+async def get_product_details(detail_url):
 
     try:
         driver.get(detail_url)
@@ -182,7 +186,7 @@ def get_product_details(detail_url):
 
                 # 이미지 데이터를 GridFS에 저장
                 image_filename = image_url.split("/")[-1]
-                image_id = fs.put(image_data, filename=image_filename)
+                image_id = await fs.upload_from_stream(image_filename, image_data)
 
             except Exception as e:
                 logging.error(
@@ -212,7 +216,7 @@ def get_product_details(detail_url):
 
 
 # 제품 정보 스크래핑 함수
-def get_product_info(
+async def get_product_info(
     cosmetic_type, cateId, cateId2, skin_type_name, skin_type_id, filename
 ):
     page = 1
@@ -262,7 +266,9 @@ def get_product_info(
 
                         try:
                             # 제품 상세 정보 추출
-                            product_details = get_product_details(full_product_url)
+                            product_details = await get_product_details(
+                                full_product_url
+                            )
 
                             if product_details:
                                 # 추가 정보 삽입
@@ -327,7 +333,7 @@ def get_product_info(
 
 
 # 메인 스크래핑 로직
-def main():
+async def main():
     filename = "data/oliveyoung_products_all.csv"
 
     for type_name, cat_list in cosmetic_types.items():
@@ -336,7 +342,7 @@ def main():
             print(
                 f"Starting scraping for cosmetic type: {type_name}, skin type: {skin_type_name}"
             )
-            get_product_info(
+            await get_product_info(
                 type_name, cateId, cateId2, skin_type_name, skin_type_id, filename
             )
 
@@ -344,4 +350,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

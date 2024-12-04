@@ -1,3 +1,5 @@
+# schemas/routine.py
+from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List
 from enum import Enum
@@ -21,8 +23,18 @@ class ProductType(BaseModel):
     frequency: int = Field(..., description="사용 빈도")
 
 
-class Routine(BaseModel):
+class RoutineCreate(BaseModel):
     routine: List[ProductType]
+
+
+class Routine(BaseModel):
+    id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")
+    routine: List[ProductType]
+
+    class Config:
+        populate_by_name = True
+        json_encoders = {ObjectId: lambda oid: str(oid)}
+        arbitary_types_allowed = True
 
 
 class UserType(str, Enum):

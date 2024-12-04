@@ -1,10 +1,13 @@
 # api/user.py
+from typing import List
 from fastapi import APIRouter, HTTPException, status, Depends
 from schemas.user import UserCreate, UserUpdate, User
 from services.user import (
+    add_owned_cosmetic,
     create_user,
     get_user_by_id,
     get_user_by_email,
+    remove_owned_cosmetic,
     update_user,
     delete_user,
 )
@@ -76,3 +79,45 @@ async def read_user_by_email(email: str):
             detail="User not found",
         )
     return user
+
+
+@router.post("/{user_id}/cosmetics/{cosmetic_id}", response_model=User)
+async def add_cosmetic_to_user(user_id: str, cosmetic_id: str):
+    """
+    사용자에게 화장품을 추가합니다.
+    """
+    user = await add_owned_cosmetic(user_id, cosmetic_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return user
+
+
+@router.delete("/{user_id}/cosmetics/{cosmetic_id}", response_model=User)
+async def remove_cosmetic_from_user(user_id: str, cosmetic_id: str):
+    """
+    사용자에게서 화장품을 제거합니다.
+    """
+    user = await remove_owned_cosmetic(user_id, cosmetic_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return user
+
+
+@router.get("/{user_id}/cosmetics", response_model=List[str])
+async def get_user_cosmetics(user_id: str):
+    """
+    사용자가 보유한 화장품 목록을 가져옵니다.
+    """
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return user.owned_cosmetics

@@ -244,7 +244,7 @@ async def recommend_cosmetics(
             total_score=product["total_score"],
             matching_ingredients=product["matching_ingredients"],
             reason=reason,
-            img_url=product.get("image_url", ""),
+            image_url=product.get("image_url", ""),
         )
         recommendations.append(recommendation)
 
