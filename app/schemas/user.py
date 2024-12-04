@@ -1,3 +1,4 @@
+# schemas/user.py
 from pydantic import (
     BaseModel,
     EmailStr,
@@ -8,6 +9,8 @@ from typing import List, Optional, Dict
 from datetime import datetime
 from bson import ObjectId
 from passlib.context import CryptContext
+
+from schemas.routine import Routine
 
 # 비밀번호 암호화를 위한 컨텍스트 설정
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -30,7 +33,9 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     skin_type: Optional[str] = None
     skin_concerns: Optional[List[str]] = None
-    avoid_ingredients: Optional[Dict[str, Dict[str, int]]] = None
+    avoid_ingredients: Optional[List[str]] = None
+    owend_cosmetics: Optional[List[str]] = None
+    routine_id: Optional[str] = None
     password: Optional[str] = None  # 업데이트 시 비밀번호 변경 가능
 
     @field_validator("password", mode="before")
@@ -46,7 +51,9 @@ class User(UserBase):
     id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")
     skin_type: Optional[str] = None
     skin_concerns: Optional[List[str]] = None
-    avoid_ingredients: Optional[Dict[str, Dict[str, int]]] = None
+    avoid_ingredients: Optional[List[str]] = None
+    owned_cosmetics: Optional[List[str]] = None
+    routine_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     hashed_password: str  # 저장된 해시 비밀번호 필드 추가
@@ -54,11 +61,3 @@ class User(UserBase):
     class Config:
         populate_by_name = True
         json_encoders = {ObjectId: lambda oid: str(oid)}
-
-
-class UserRoutine(BaseModel):
-    user: User
-    routine: List[str]
-
-    class Config:
-        populate_by_name = True
