@@ -36,6 +36,7 @@ class UserUpdate(BaseModel):
     avoid_ingredients: Optional[List[str]] = None
     owend_cosmetics: Optional[List[str]] = None
     routine_id: Optional[str] = None
+    bsti: Optional[str] = None
     password: Optional[str] = None  # 업데이트 시 비밀번호 변경 가능
 
     @field_validator("password", mode="before")
@@ -54,6 +55,7 @@ class User(UserBase):
     avoid_ingredients: Optional[List[str]] = None
     owned_cosmetics: Optional[List[str]] = None
     routine_id: Optional[str] = None
+    bsti: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     hashed_password: str  # 저장된 해시 비밀번호 필드 추가
