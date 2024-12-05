@@ -70,6 +70,7 @@ async def predict_image(
 ) -> PredictionResponse:
     classification_model = get_classification_model(area_name)
     regression_models = get_regression_models(area_name)
+    pprint(classification_model)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     contents = await file.read()
@@ -112,26 +113,22 @@ async def predict_image(
                 )
             regression_values[regression_value] = float(scaled_output)
         response["regression_values"] = regression_values
-    # if classification_model is not None:
-    #     with torch.no_grad():
-    #         class_output = classification_model(input_tensor)
-    #         print("Class Output (Logits):", class_output.cpu().numpy())
-    #     probabilities = torch.nn.functional.softmax(class_output, dim=1)
-    #     _, predicted_class = torch.max(class_output, dim=1)
-    #     labels = class_labels.get(area_name, [])
-    #     if predicted_class.item() < len(labels):
-    #         predicted_label = labels[predicted_class.item()]
-    #     else:
-    #         predicted_label = "Unknown"
-    #     prob_dict = {}
-    #     for idx, prob in enumerate(probabilities.cpu().numpy()[0]):
-    #         if idx < len(labels):
-    #             prob_dict[labels[idx]] = float(prob)
-    #         else:
-    #             prob_dict[f"Class {idx}"] = float(prob)
-    #     response["predicted_class"] = int(predicted_class.item())
-    #     response["predicted_label"] = predicted_label
-    #     response["classification_probabilities"] = prob_dict
+    class_values_for_area = class_labels.get(area_name, [])
+    if class_values_for_area:
+        class_values: Dict[str, str] = {}
+        for class_value in class_values_for_area:
+            class_model = classification_model.get(class_value)
+            if class_model is None:
+                print(f"No classification model loaded for {class_value}")
+                continue
+            with torch.no_grad():
+                class_output = class_model(input_tensor)
+                class_output = torch.nn.functional.softmax(class_output, dim=1)
+                class_output = class_output.cpu().numpy()
+                class_output = class_output[0]
+                class_output = class_output.tolist()
+                class_values[class_value] = class_output
+        response["classification_probabilities"] = class_values
 
     if not response:
         raise ValueError("No available models for the given area")

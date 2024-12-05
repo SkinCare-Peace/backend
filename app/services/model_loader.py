@@ -1,12 +1,13 @@
 # services/model_loader.py
 
+from pprint import pprint
 from typing import Dict
 import torch
 import torch.nn as nn
 from torchvision import models
 from core.config import settings
 import numpy as np
-from data.class_labels import regression_labels
+from data.class_labels import regression_labels, class_labels
 
 
 classification_models = {}
@@ -38,9 +39,41 @@ def load_models():
         except FileNotFoundError:
             print(f"No regression model found: {regression_value}")
 
+    # Load classification models
+    class_values = list(
+        set(value for values in class_labels.values() for value in values)
+    )
+    for class_value in class_values:
+        classification_checkpoint_path = f"{settings.checkpoint_dir}/class/initialResNet/save_model/{class_value}/state_dict.bin"
+        try:
+            classification_model = models.resnet50()
+            num_ftrs = classification_model.fc.in_features
+            checkpoint = torch.load(
+                classification_checkpoint_path, map_location=device, weights_only=True
+            )
+            if "model_state" in checkpoint:
+                output_size = checkpoint["model_state"]["fc.weight"].size(0)
+            else:
+                raise ValueError("Invalid checkpoint file")
+
+            classification_model.fc = nn.Linear(num_ftrs, output_size)
+            classification_model.load_state_dict(checkpoint["model_state"])
+            classification_model.to(device)
+            classification_model.eval()
+            classification_models[class_value] = classification_model
+            print(f"Loaded classification model: {class_value}")
+        except FileNotFoundError:
+            print(f"No classification model found: {class_value}")
+
 
 def get_classification_model(area_name: str):
-    return classification_models.get(area_name)
+    result_dict = {}
+    classification_values_for_area = class_labels.get(area_name, [])
+    for classification_value in classification_values_for_area:
+        classification_model = classification_models.get(classification_value)
+        if classification_model is not None:
+            result_dict[classification_value] = classification_model
+    return result_dict
 
 
 def get_regression_models(area_name: str) -> Dict[str, nn.Module]:
@@ -52,15 +85,3 @@ def get_regression_models(area_name: str) -> Dict[str, nn.Module]:
             result_dict[regression_value] = regression_model
 
     return result_dict
-
-
-def get_num_classes(area_num, mode="class"):
-    if mode == "class":
-        model_num_class = [np.nan, 15, 7, 7, 0, 12, 0, 5, 7]
-    else:
-        model_num_class = [1, 2, np.nan, 1, 0, 3, 0, np.nan, 2]
-    num = model_num_class[area_num]
-    if np.isnan(num) or num == 0:
-        return 0
-    else:
-        return int(num)

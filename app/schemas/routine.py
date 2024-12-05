@@ -50,9 +50,9 @@ class UserType(str, Enum):
 
 
 ROUTINE_BY_USER_TYPE = {
-    UserType.LTLC: [Step.CLEANSING, Step.TONER, Step.MOISTURIZING, Step.SUN_CARE],
-    UserType.MTLC: [Step.CLEANSING, Step.TONER, Step.MOISTURIZING, Step.SUN_CARE],
-    UserType.HTLC: [Step.CLEANSING, Step.TONER, Step.MOISTURIZING, Step.SUN_CARE],
+    UserType.LTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
+    UserType.MTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
+    UserType.HTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
     UserType.LTMC: [
         Step.CLEANSING,
         Step.TONER,
