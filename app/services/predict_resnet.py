@@ -70,7 +70,6 @@ async def predict_image(
 ) -> PredictionResponse:
     classification_model = get_classification_model(area_name)
     regression_models = get_regression_models(area_name)
-    pprint(classification_model)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     contents = await file.read()
