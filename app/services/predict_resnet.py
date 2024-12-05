@@ -106,10 +106,6 @@ async def predict_image(
                 scaled_output = reg_output.cpu().item() * scaling_factors.get(
                     regression_value, 1
                 )
-                print(
-                    f"Regression Output for {regression_value}:",
-                    scaled_output,
-                )
             regression_values[regression_value] = float(scaled_output)
         response["regression_values"] = regression_values
     class_values_for_area = class_labels.get(area_name, [])
