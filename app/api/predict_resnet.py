@@ -2,7 +2,7 @@
 
 import traceback
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
-from services.predict import predict_image
+from services.predict_resnet import predict_image
 from schemas.prediction import PredictionResponse
 
 router = APIRouter(
