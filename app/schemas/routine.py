@@ -1,4 +1,5 @@
 # schemas/routine.py
+from datetime import date
 from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List
@@ -14,6 +15,11 @@ class Step(str, Enum):
     SUN_CARE = "선케어"
     SLEEPING_PACK = "수면 중 보습 케어"
     MASK_PACK = "시간 투자형 집중케어"
+
+
+class RoutineRecord(BaseModel):
+    user_id: str = Field(..., description="사용자 _id")
+    dates: List[date] = Field(..., description="루틴 실천 날짜 리스트")
 
 
 class ProductType(BaseModel):

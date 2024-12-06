@@ -1,10 +1,12 @@
 # services/routine.py
+from datetime import date, datetime
 from typing import Optional
 
 from bson import ObjectId
 from schemas.routine import (
     PRODUCT_TYPES,
     RoutineCreate,
+    RoutineRecord,
     UserType,
     ROUTINE_BY_USER_TYPE,
     Routine,
@@ -14,6 +16,35 @@ from pymongo.errors import PyMongoError
 
 db = get_db()
 routine_collection = db["routines"]
+routine_record_collection = db["routine_records"]
+
+
+async def save_routine_record(user_id: str, date: date) -> bool:
+    try:
+        date_as_datetime = datetime.combine(date, datetime.min.time())
+        if not ObjectId.is_valid(user_id):
+            return False
+        await routine_record_collection.update_one(
+            {"user_id": user_id},
+            {"$addToSet": {"dates": date_as_datetime}},
+            upsert=True,
+        )
+        return True
+    except PyMongoError as e:
+        raise Exception(f"Database error: {e}")
+
+
+async def get_routine_records(user_id: str) -> Optional[RoutineRecord]:
+    try:
+        if not ObjectId.is_valid(user_id):
+            return None
+        record = await routine_record_collection.find_one({"user_id": user_id})
+        if record:
+            record["dates"] = [d.date() for d in record["dates"]]
+            return RoutineRecord(**record)
+        return None
+    except PyMongoError as e:
+        raise Exception(f"Database error: {e}")
 
 
 async def create_routine(routine: RoutineCreate) -> Routine:
