@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.post("/{user_id}")
+@router.post("/record/{user_id}")
 async def add_routine_record(user_id: str, date: date):
     success = await save_routine_record(user_id, date)
     if not success:
@@ -26,7 +26,7 @@ async def add_routine_record(user_id: str, date: date):
     return {"message": "Routine record added successfully"}
 
 
-@router.get("/{user_id}", response_model=RoutineRecord)
+@router.get("/record/{user_id}", response_model=RoutineRecord)
 async def read_routine_records(user_id: str):
     record = await get_routine_records(user_id)
     if not record:
