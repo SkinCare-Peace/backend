@@ -40,7 +40,7 @@ async def read_routine_records(user_id: str):
 @router.post("/", response_model=Routine)
 async def generate_routine(time_minutes: int, money_won: int):
     try:
-        routine = await get_routine(time_minutes, money_won)
+        routine = get_routine(time_minutes, money_won)
         return routine
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
