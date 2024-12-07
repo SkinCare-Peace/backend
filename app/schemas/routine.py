@@ -1,7 +1,7 @@
 # schemas/routine.py
 from bson import ObjectId
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Dict
 from enum import Enum
 
 
@@ -16,27 +16,6 @@ class Step(str, Enum):
     MASK_PACK = "시간 투자형 집중케어"
 
 
-class ProductType(BaseModel):
-    name: str = Field(..., description="화장품 종류의 이름")
-    sequence: int = Field(..., description="사용 순서")
-    usage_time: List[str] = Field(..., description="사용 시간대")
-    frequency: int = Field(..., description="사용 빈도")
-
-
-class RoutineCreate(BaseModel):
-    routine: List[ProductType]
-
-
-class Routine(BaseModel):
-    id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")
-    routine: List[ProductType]
-
-    class Config:
-        populate_by_name = True
-        json_encoders = {ObjectId: lambda oid: str(oid)}
-        arbitary_types_allowed = True
-
-
 class UserType(str, Enum):
     LTLC = "LTLC"  # Low Time, Low Cost
     LTHC = "LTHC"  # Low Time, High Cost
@@ -49,108 +28,98 @@ class UserType(str, Enum):
     HTMC = "HTMC"  # High Time, Medium Cost
 
 
-ROUTINE_BY_USER_TYPE = {
-    UserType.LTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
-    UserType.MTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
-    UserType.HTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
-    UserType.LTMC: [
-        Step.CLEANSING,
-        Step.TONER,
-        Step.CONCENTRATION_CARE,
-        Step.MOISTURIZING,
-        Step.SUN_CARE,
-    ],
-    UserType.MTMC: [
-        Step.CLEANSING,
-        Step.TONER,
-        Step.CONCENTRATION_CARE,
-        Step.MOISTURIZING,
-        Step.SUN_CARE,
-        Step.MASK_PACK,
-    ],
-    UserType.HTMC: [
-        Step.CLEANSING,
-        Step.TONER,
-        Step.CONCENTRATION_CARE,
-        Step.MOISTURIZING,
-        Step.SUN_CARE,
-        Step.MASK_PACK,
-        Step.SLEEPING_PACK,
-    ],
-    UserType.LTHC: [
-        Step.CLEANSING,
-        Step.TONER,
-        Step.CONCENTRATION_CARE,
-        Step.MOISTURIZING,
-        Step.SUN_CARE,
-    ],
-    UserType.MTHC: [
-        Step.CLEANSING,
-        Step.TONER,
-        Step.CONCENTRATION_CARE,
-        Step.MOISTURIZING,
-        Step.SUN_CARE,
-        Step.MASK_PACK,
-    ],
-    UserType.HTHC: [
-        Step.CLEANSING,
-        Step.TONER,
-        Step.CONCENTRATION_CARE,
-        Step.MOISTURIZING,
-        Step.SUN_CARE,
-        Step.MASK_PACK,
-        Step.SLEEPING_PACK,
-    ],
+# 각 Step 별 공통 sequence
+STEP_SEQUENCE = {
+    Step.CLEANSING: 1,
+    Step.CLEANSING_CARE: 1,
+    Step.TONER: 2,
+    Step.MASK_PACK: 2,
+    Step.CONCENTRATION_CARE: 3,
+    Step.MOISTURIZING: 4,
+    Step.SUN_CARE: 5,
+    Step.SLEEPING_PACK: 6,
 }
 
 
-PRODUCT_TYPES = {
-    Step.CLEANSING: ProductType(
-        name="클렌징폼/클렌징오일",
-        sequence=1,
-        usage_time=["morning", "evening"],
-        frequency=1,
-    ),
-    Step.CLEANSING_CARE: ProductType(
-        name="스크럽/필링젤",
-        sequence=1,
-        usage_time=["morning", "evening"],
-        frequency=1,
-    ),
-    Step.TONER: ProductType(
-        name="스킨/토너",
-        sequence=2,
-        usage_time=["morning", "evening"],
-        frequency=1,
-    ),
-    Step.MASK_PACK: ProductType(
-        name="마스크팩/아이팩",
-        sequence=2,
-        usage_time=["evening"],
-        frequency=3,
-    ),
-    Step.CONCENTRATION_CARE: ProductType(
-        name="세럼/앰플/에센스",
-        sequence=3,
-        usage_time=["morning", "evening"],
-        frequency=1,
-    ),
-    Step.MOISTURIZING: ProductType(
-        name="크림/로션",
-        sequence=4,
-        usage_time=["morning", "evening"],
-        frequency=1,
-    ),
-    Step.SUN_CARE: ProductType(
-        name="선크림/선스틱",
-        sequence=5,
-        usage_time=["morning"],
-        frequency=1,
-    ),
-    Step.SLEEPING_PACK: ProductType(
-        name="슬리핑팩",
-        sequence=6,
-        usage_time=["evening"],
-        frequency=1,
-    ),
-}
+class SubProductType(BaseModel):
+    name: str = Field(..., description="하위 화장품 종류의 이름")
+    usage_time: List[str] = Field(..., description="사용 시간대")
+    frequency: int = Field(..., description="사용 빈도")
+    instructions: str = Field(..., description="사용 방법")
+    sequence: int = Field(..., description="전체 제품 사용 시 고려되는 사용 순서")
+
+
+class ProductCategory(BaseModel):
+    step: Step
+    sub_types: List[SubProductType]
+
+
+class RoutineCreate(BaseModel):
+    morning_routine: List[SubProductType]
+    evening_routine: List[SubProductType]
+
+
+class Routine(BaseModel):
+    id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")
+    morning_routine: List[SubProductType]
+    evening_routine: List[SubProductType]
+
+    class Config:
+        populate_by_name = True
+        json_encoders = {ObjectId: lambda oid: str(oid)}
+        arbitrary_types_allowed = True
+
+
+# ROUTINE_BY_USER_TYPE = {
+#     UserType.LTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
+#     UserType.MTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
+#     UserType.HTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
+#     UserType.LTMC: [
+#         Step.CLEANSING,
+#         Step.TONER,
+#         Step.CONCENTRATION_CARE,
+#         Step.MOISTURIZING,
+#         Step.SUN_CARE,
+#     ],
+#     UserType.MTMC: [
+#         Step.CLEANSING,
+#         Step.TONER,
+#         Step.CONCENTRATION_CARE,
+#         Step.MOISTURIZING,
+#         Step.SUN_CARE,
+#         Step.MASK_PACK,
+#     ],
+#     UserType.HTMC: [
+#         Step.CLEANSING,
+#         Step.TONER,
+#         Step.CONCENTRATION_CARE,
+#         Step.MOISTURIZING,
+#         Step.SUN_CARE,
+#         Step.MASK_PACK,
+#         Step.SLEEPING_PACK,
+#     ],
+#     UserType.LTHC: [
+#         Step.CLEANSING,
+#         Step.TONER,
+#         Step.CONCENTRATION_CARE,
+#         Step.MOISTURIZING,
+#         Step.SUN_CARE,
+#     ],
+#     UserType.MTHC: [
+#         Step.CLEANSING,
+#         Step.TONER,
+#         Step.CONCENTRATION_CARE,
+#         Step.MOISTURIZING,
+#         Step.SUN_CARE,
+#         Step.MASK_PACK,
+#     ],
+#     UserType.HTHC: [
+#         Step.CLEANSING,
+#         Step.TONER,
+#         Step.CONCENTRATION_CARE,
+#         Step.MOISTURIZING,
+#         Step.SUN_CARE,
+#         Step.MASK_PACK,
+#         Step.SLEEPING_PACK,
+#     ],
+# }
