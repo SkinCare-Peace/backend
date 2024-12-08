@@ -13,6 +13,7 @@ PRODUCTS_DATA = {
                 "4. 미온수로 얼굴을 헹궈주세요!"
             ),
             "sequence": STEP_SEQUENCE[Step.CLEANSING],
+            "time": 2,
         },
         "cleansing_foam": {
             "name": "클렌징폼",
@@ -25,6 +26,7 @@ PRODUCTS_DATA = {
                 "4. 미온수로 얼굴을 헹궈주세요!"
             ),
             "sequence": STEP_SEQUENCE[Step.CLEANSING],
+            "time": 2,
         },
         "cleansing_water": {
             "name": "클렌징워터",
@@ -37,6 +39,7 @@ PRODUCTS_DATA = {
                 "4. 미온수로 가볍게 헹궈줍니다."
             ),
             "sequence": STEP_SEQUENCE[Step.CLEANSING],
+            "time": 2,
         },
         "cleansing_milk": {
             "name": "클렌징밀크",
@@ -48,6 +51,7 @@ PRODUCTS_DATA = {
                 "3. 메이크업이 녹을 때까지 마사지 후, 화장솜 또는 미온수로 헹궈내세요."
             ),
             "sequence": STEP_SEQUENCE[Step.CLEANSING],
+            "time": 2,
         },
         "cleansing_gel": {
             "name": "클렌징젤",
@@ -60,6 +64,7 @@ PRODUCTS_DATA = {
                 "4. 미온수로 깨끗이 헹궈냅니다."
             ),
             "sequence": STEP_SEQUENCE[Step.CLEANSING],
+            "time": 2,
         },
         "cleansing_balm": {
             "name": "클렌징밤",
@@ -71,6 +76,7 @@ PRODUCTS_DATA = {
                 "3. 물을 조금 묻혀 유화 후 깨끗이 헹궈냅니다."
             ),
             "sequence": STEP_SEQUENCE[Step.CLEANSING],
+            "time": 2,
         },
     },
     Step.CLEANSING_CARE: {
@@ -85,6 +91,7 @@ PRODUCTS_DATA = {
                 "4. 미온수로 깨끗이 씻어냅니다."
             ),
             "sequence": STEP_SEQUENCE[Step.CLEANSING_CARE],
+            "time": 2,
         },
         "peeling": {
             "name": "필링",
@@ -96,6 +103,7 @@ PRODUCTS_DATA = {
                 "3. 미온수로 깨끗이 씻어냅니다.\n*주 1~2회 사용 권장*"
             ),
             "sequence": STEP_SEQUENCE[Step.CLEANSING_CARE],
+            "time": 2,
         },
     },
     Step.TONER: {
@@ -109,6 +117,7 @@ PRODUCTS_DATA = {
                 "3. 손바닥으로 가볍게 눌러 흡수시켜주세요."
             ),
             "sequence": STEP_SEQUENCE[Step.TONER],
+            "time": 1,
         },
         "toner": {
             "name": "토너",
@@ -120,6 +129,7 @@ PRODUCTS_DATA = {
                 "3. 가볍게 두드려 흡수시켜줍니다."
             ),
             "sequence": STEP_SEQUENCE[Step.TONER],
+            "time": 1,
         },
     },
     Step.CONCENTRATION_CARE: {
@@ -132,6 +142,7 @@ PRODUCTS_DATA = {
                 "2. 손바닥으로 가볍게 눌러 흡수시켜줍니다."
             ),
             "sequence": STEP_SEQUENCE[Step.CONCENTRATION_CARE],
+            "time": 1,
         },
         "serum": {
             "name": "세럼",
@@ -142,6 +153,7 @@ PRODUCTS_DATA = {
                 "2. 얼굴 전체에 부드럽게 펴 바르고 톡톡 두드려 흡수시킵니다."
             ),
             "sequence": STEP_SEQUENCE[Step.CONCENTRATION_CARE],
+            "time": 1,
         },
         "ampoule": {
             "name": "앰플",
@@ -152,6 +164,7 @@ PRODUCTS_DATA = {
                 "2. 얼굴 전체에 부드럽게 펴 바르고 톡톡 두드려 흡수시킵니다."
             ),
             "sequence": STEP_SEQUENCE[Step.CONCENTRATION_CARE],
+            "time": 1,
         },
     },
     Step.MOISTURIZING: {
@@ -165,6 +178,7 @@ PRODUCTS_DATA = {
                 "3. 부드럽게 펴 바른 후 손바닥으로 가볍게 눌러 흡수시킵니다."
             ),
             "sequence": STEP_SEQUENCE[Step.MOISTURIZING],
+            "time": 1,
         },
         "lotion": {
             "name": "로션",
@@ -176,6 +190,7 @@ PRODUCTS_DATA = {
                 "3. 손끝으로 마사지하듯 흡수시켜주세요."
             ),
             "sequence": STEP_SEQUENCE[Step.MOISTURIZING],
+            "time": 1,
         },
     },
     Step.SUN_CARE: {
@@ -189,6 +204,7 @@ PRODUCTS_DATA = {
                 "3. 고르게 펴 발라줍니다."
             ),
             "sequence": STEP_SEQUENCE[Step.SUN_CARE],
+            "time": 1,
         },
         "sunstick": {
             "name": "선스틱",
@@ -196,6 +212,7 @@ PRODUCTS_DATA = {
             "frequency": 1,
             "instructions": "1. 얼굴이나 목에 스틱을 2~3회 문질러 균일하게 바릅니다.",
             "sequence": STEP_SEQUENCE[Step.SUN_CARE],
+            "time": 1,
         },
     },
     Step.SLEEPING_PACK: {
@@ -209,6 +226,7 @@ PRODUCTS_DATA = {
                 "3. 다음날 아침 미온수로 가볍게 씻어내세요."
             ),
             "sequence": STEP_SEQUENCE[Step.SLEEPING_PACK],
+            "time": 1,
         }
     },
     Step.MASK_PACK: {
@@ -222,6 +240,7 @@ PRODUCTS_DATA = {
                 "3. 남은 에센스를 톡톡 두드려 흡수시켜주세요."
             ),
             "sequence": STEP_SEQUENCE[Step.MASK_PACK],
+            "time": 15,
         },
     },
 }

@@ -53,6 +53,7 @@ class SubProductType(BaseModel):
     frequency: int = Field(..., description="사용 빈도")
     instructions: str = Field(..., description="사용 방법")
     sequence: int = Field(..., description="전체 제품 사용 시 고려되는 사용 순서")
+    time: int = Field(..., description="소요 시간(분)")
 
 
 class ProductCategory(BaseModel):

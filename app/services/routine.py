@@ -285,6 +285,7 @@ def get_routine(time_minutes, money_won) -> RoutineCreate:
             frequency=chosen_product_data["frequency"],
             instructions=chosen_product_data["instructions"],
             sequence=chosen_product_data["sequence"],
+            time=chosen_product_data["time"],
         )
         selected_products.append(sub_product)
 
