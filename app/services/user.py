@@ -7,7 +7,6 @@ from schemas.user import UserCreate, UserUpdate, User
 from datetime import datetime
 from pymongo.errors import PyMongoError
 from db.database import get_db
-from services.routine import create_routine
 
 db = get_db()
 user_collection = db["users"]
@@ -69,15 +68,6 @@ async def update_user(user_id: str, user_update: UserUpdate) -> Optional[User]:
         if "password" in update_data:
             update_data["hashed_password"] = update_data.pop("password")
         update_data["updated_at"] = datetime.now()
-
-        if (
-            "routine_id" not in update_data
-            and "routine" in update_data
-            and update_data["routine"]
-        ):
-            routine = await create_routine(update_data["routine"])
-            update_data["routine_id"] = routine.id
-            update_data.pop("routine")
 
         result = await user_collection.update_one(
             {"_id": ObjectId(user_id)}, {"$set": update_data}
