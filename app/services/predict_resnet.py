@@ -1,3 +1,4 @@
+# services/predict_resnet.py
 from pprint import pprint
 from typing import Dict
 from torchvision import transforms
