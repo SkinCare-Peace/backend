@@ -34,6 +34,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     skin_type: Optional[str] = None
     skin_concerns: Optional[List[str]] = None
+    has_sensitive_skin: Optional[bool] = None
     avoid_ingredients: Optional[List[str]] = None
     owend_cosmetics: Optional[List[str]] = None
     routine_id: Optional[str] = None
@@ -53,6 +54,7 @@ class User(UserBase):
     id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")
     skin_type: Optional[str] = None
     skin_concerns: Optional[List[str]] = None
+    has_sensitive_skin: Optional[bool] = None
     avoid_ingredients: Optional[List[str]] = None
     owned_cosmetics: Optional[List[str]] = None
     routine_id: Optional[str] = None
