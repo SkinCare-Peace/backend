@@ -36,7 +36,7 @@ async def recommend_cosmetics(
     budget: int,
 ) -> List[ProductRecommendation]:
     # 1. 데이터 로딩
-    cursor = db["oliveyoung_products"].find()
+    cursor = db["oliveyoung_products_integrated"].find()
     products = await cursor.to_list(length=None)
     df = pd.DataFrame(products)
 
@@ -61,7 +61,6 @@ async def recommend_cosmetics(
 
     # 2. 데이터 전처리
     # 2.1 중복 제거 및 인덱스 재설정
-    df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)
 
     # 2.2 결측치 처리
@@ -75,7 +74,9 @@ async def recommend_cosmetics(
 
     # 2.4 피부 타입 및 화장품 종류 표준화
     df["skin_type"] = df["skin_type"].str.strip().str.lower()
-    df["cosmetic_type"] = df["cosmetic_type"].str.strip().str.lower()
+    df["cosmetic_type"] = df["cosmetic_type"].apply(
+        lambda ct_list: [ct.strip().lower() for ct in ct_list]
+    )
 
     # 2.5 성분 데이터 전처리
     df["ingredients_list"] = (
@@ -89,7 +90,9 @@ async def recommend_cosmetics(
 
     # 3.2 필터링 단계
     # 3.2.1 화장품 종류 필터링
-    filtered_df = df[df["cosmetic_type"].isin([cosmetic_types])]
+    filtered_df = df[
+        df["cosmetic_type"].apply(lambda ct: cosmetic_types.strip().lower() in ct)
+    ].copy()
 
     # 3.2.3 알레르기 및 비선호 성분 필터링
     def contains_allergic_ingredient(ingredients, allergic_ingredients):

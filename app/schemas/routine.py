@@ -35,18 +35,6 @@ class RoutineRecord(BaseModel):
     records: List[DailyRoutineRecord]
 
 
-class UserType(str, Enum):
-    LTLC = "LTLC"  # Low Time, Low Cost
-    LTHC = "LTHC"  # Low Time, High Cost
-    LTMC = "LTMC"  # Low Time, Medium Cost
-    MTLC = "MTLC"  # Medium Time, Low Cost
-    MTHC = "MTHC"  # Medium Time, High Cost
-    MTMC = "MTMC"  # Medium Time, Medium Cost
-    HTLC = "HTLC"  # High Time, Low Cost
-    HTHC = "HTHC"  # High Time, High Cost
-    HTMC = "HTMC"  # High Time, Medium Cost
-
-
 # 각 Step 별 공통 sequence
 STEP_SEQUENCE = {
     Step.CLEANSING: 1,
@@ -67,11 +55,18 @@ class SubProductType(BaseModel):
     instructions: str = Field(..., description="사용 방법")
     sequence: int = Field(..., description="전체 제품 사용 시 고려되는 사용 순서")
     time: int = Field(..., description="소요 시간(분)")
+    cost: int = Field(..., description="루틴 생성 시 할당된 비용")
 
 
 class ProductCategory(BaseModel):
     step: Step
     sub_types: List[SubProductType]
+
+
+class RoutineCreateRequest(BaseModel):
+    time_minutes: int = Field(..., description="소요 시간(분)")
+    money_won: int = Field(..., description="비용(원)")
+    owned_cosmetics: List[str] = Field(..., description="보유 화장품 종류 리스트")
 
 
 class RoutineCreate(BaseModel):
@@ -88,58 +83,3 @@ class Routine(BaseModel):
         populate_by_name = True
         json_encoders = {ObjectId: lambda oid: str(oid)}
         arbitrary_types_allowed = True
-
-
-# ROUTINE_BY_USER_TYPE = {
-#     UserType.LTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
-#     UserType.MTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
-#     UserType.HTLC: [Step.CLEANSING, Step.MOISTURIZING, Step.SUN_CARE],
-#     UserType.LTMC: [
-#         Step.CLEANSING,
-#         Step.TONER,
-#         Step.CONCENTRATION_CARE,
-#         Step.MOISTURIZING,
-#         Step.SUN_CARE,
-#     ],
-#     UserType.MTMC: [
-#         Step.CLEANSING,
-#         Step.TONER,
-#         Step.CONCENTRATION_CARE,
-#         Step.MOISTURIZING,
-#         Step.SUN_CARE,
-#         Step.MASK_PACK,
-#     ],
-#     UserType.HTMC: [
-#         Step.CLEANSING,
-#         Step.TONER,
-#         Step.CONCENTRATION_CARE,
-#         Step.MOISTURIZING,
-#         Step.SUN_CARE,
-#         Step.MASK_PACK,
-#         Step.SLEEPING_PACK,
-#     ],
-#     UserType.LTHC: [
-#         Step.CLEANSING,
-#         Step.TONER,
-#         Step.CONCENTRATION_CARE,
-#         Step.MOISTURIZING,
-#         Step.SUN_CARE,
-#     ],
-#     UserType.MTHC: [
-#         Step.CLEANSING,
-#         Step.TONER,
-#         Step.CONCENTRATION_CARE,
-#         Step.MOISTURIZING,
-#         Step.SUN_CARE,
-#         Step.MASK_PACK,
-#     ],
-#     UserType.HTHC: [
-#         Step.CLEANSING,
-#         Step.TONER,
-#         Step.CONCENTRATION_CARE,
-#         Step.MOISTURIZING,
-#         Step.SUN_CARE,
-#         Step.MASK_PACK,
-#         Step.SLEEPING_PACK,
-#     ],
-# }

@@ -1,5 +1,8 @@
 # services/routine.py
 from datetime import date, datetime
+from math import inf
+import math
+import random
 from typing import Dict, List, Optional, Tuple
 
 from bson import ObjectId
@@ -7,11 +10,9 @@ from data.products_data import PRODUCTS_DATA
 from schemas.routine import (
     DailyRoutineRecord,
     RoutineCreate,
-    RoutineRecordRequest,
     Step,
     SubProductType,
     RoutineRecord,
-    UserType,
     Routine,
 )
 from db.database import get_db
@@ -138,214 +139,66 @@ async def delete_routine(routine_id: str) -> bool:
         raise Exception(f"Database error: {e}")
 
 
-def get_time_level(time_minutes):
-    if time_minutes < 5:
-        return "low"
-    elif time_minutes <= 20:
-        return "medium"
-    else:
-        return "high"
+# async def get_routine(
+#     time_minutes: int, money_won: int, owned_cosmetics: List[str]
+# ) -> RoutineCreate:
+#     from data.products_data import PRODUCTS_DATA
 
+#     selected_products: List[SubProductType] = []
+#     used_product_keys = set()
 
-def get_money_level(money_won):
-    if money_won < 50000:
-        return "low"
-    elif money_won <= 100000:
-        return "medium"
-    else:
-        return "high"
+#     # PRIORITY_STEPS 순회하면서 제품 선택
+#     for step, forced_key in PRIORITY_STEPS:
+#         step_products = PRODUCTS_DATA.get(step, {})
+#         if not step_products:
+#             continue
 
+#         if forced_key:
+#             candidate_keys = [forced_key] if forced_key in step_products else []
+#         else:
+#             candidate_keys = [
+#                 k for k in step_products.keys() if k not in used_product_keys
+#             ]
 
-def get_user_type(time_level, money_level) -> UserType:
-    if time_level == "low" and money_level == "low":
-        return UserType.LTLC
-    elif time_level == "low" and money_level == "medium":
-        return UserType.LTMC
-    elif time_level == "low" and money_level == "high":
-        return UserType.LTHC
-    elif time_level == "medium" and money_level == "low":
-        return UserType.MTLC
-    elif time_level == "medium" and money_level == "medium":
-        return UserType.MTMC
-    elif time_level == "medium" and money_level == "high":
-        return UserType.MTHC
-    elif time_level == "high" and money_level == "low":
-        return UserType.HTLC
-    elif time_level == "high" and money_level == "medium":
-        return UserType.HTMC
-    elif time_level == "high" and money_level == "high":
-        return UserType.HTHC
-    else:
-        raise ValueError("Invalid time_level or money_level")
+#         chosen_key = None
+#         chosen_product_data = None
 
+#         for ck in candidate_keys:
+#             product_data = step_products[ck]
+#             ctype = product_data["name"]
+#             segment_price = PRICE_SEGMENTS.get(ctype, {"mid": 10000})["mid"]
 
-def get_steps_by_user_type(user_type: UserType) -> List[Tuple[Step, Optional[str]]]:
-    # Tuple[Step, Optional[str]] 형태로 반환
-    # (Step, product_key)
-    # product_key가 None이면 어떤 제품이든 선택 가능
-    # product_key가 특정 값이면 해당 제품을 강제로 선택
+#             # 가진 제품이면 돈 차감 없음
+#             needed_money = 0 if ck in owned_cosmetics else segment_price
+#             needed_time = product_data["time"]
 
-    if user_type in [UserType.LTLC, UserType.MTLC, UserType.HTLC]:
-        return [
-            (Step.CLEANSING, "cleansing_foam"),  # CLEANSING에 대해 특정 제품 추천
-            (Step.MOISTURIZING, None),
-            (Step.SUN_CARE, None),
-        ]
-    elif user_type == UserType.LTMC:
-        return [
-            (Step.CLEANSING, "cleansing_foam"),
-            (Step.TONER, None),
-            (Step.CONCENTRATION_CARE, None),
-            (Step.MOISTURIZING, None),
-            (Step.SUN_CARE, None),
-        ]
-    elif user_type == UserType.MTMC:
-        return [
-            (Step.CLEANSING, "cleansing_foam"),
-            (Step.TONER, None),
-            (Step.CONCENTRATION_CARE, None),
-            (Step.MOISTURIZING, None),
-            (Step.SUN_CARE, None),
-            (Step.MASK_PACK, None),
-        ]
-    elif user_type == UserType.HTMC:
-        return [
-            (Step.CLEANSING, "cleansing_foam"),
-            (Step.TONER, None),
-            (Step.CONCENTRATION_CARE, None),
-            (Step.MOISTURIZING, None),
-            (Step.SUN_CARE, None),
-            (Step.MASK_PACK, None),
-            (Step.SLEEPING_PACK, None),
-        ]
-    elif user_type == UserType.LTHC:
-        return [
-            (Step.CLEANSING, "cleansing_foam"),
-            (Step.TONER, None),
-            (Step.CONCENTRATION_CARE, None),
-            (Step.MOISTURIZING, None),
-            (Step.SUN_CARE, None),
-        ]
-    elif user_type == UserType.MTHC:
-        return [
-            (Step.CLEANSING, "cleansing_foam"),
-            (Step.TONER, None),
-            (Step.CONCENTRATION_CARE, None),
-            (Step.MOISTURIZING, None),
-            (Step.SUN_CARE, None),
-            (Step.MASK_PACK, None),
-        ]
-    elif user_type == UserType.HTHC:
-        return [
-            (Step.CLEANSING, "cleansing_foam"),
-            (Step.TONER, None),
-            (Step.CONCENTRATION_CARE, None),
-            (Step.MOISTURIZING, None),
-            (Step.SUN_CARE, None),
-            (Step.MASK_PACK, None),
-            (Step.SLEEPING_PACK, None),
-        ]
-    else:
-        # 기본값 혹은 예외 처리
-        return [
-            (Step.CLEANSING, "cleansing_foam"),
-            (Step.MOISTURIZING, None),
-            (Step.SUN_CARE, None),
-        ]
+#             if needed_time <= time_minutes and needed_money <= money_won:
+#                 chosen_key = ck
+#                 chosen_product_data = product_data
+#                 break
 
+#         if chosen_key and chosen_product_data:
+#             used_product_keys.add(chosen_key)
 
-def get_routine(time_minutes, money_won) -> RoutineCreate:
-    user_type = get_user_type(get_time_level(time_minutes), get_money_level(money_won))
-    step_product_pairs = get_steps_by_user_type(user_type)
+#             # 시간 및 돈 차감
+#             deducted_time = chosen_product_data["time"]
+#             # mid 구간 가격
+#             product_name = chosen_product_data["name"]
+#             segment_price = PRICE_SEGMENTS.get(product_name, {"mid": 10000})["mid"]
+#             deducted_money = 0 if chosen_key in owned_cosmetics else int(segment_price)
 
-    # CLEANSING 단계 인덱스
-    cleansing_indices = [
-        i for i, (st, pk) in enumerate(step_product_pairs) if st == Step.CLEANSING
-    ]
+#             time_minutes -= deducted_time
+#             money_won -= deducted_money
+#             sub_product = SubProductType(
+#                 name=chosen_product_data["name"],
+#                 usage_time=chosen_product_data["usage_time"],
+#                 frequency=chosen_product_data["frequency"],
+#                 instructions=chosen_product_data["instructions"],
+#                 sequence=chosen_product_data["sequence"],
+#                 time=chosen_product_data["time"],
+#                 cost=deducted_money,
+#             )
+#             selected_products.append(sub_product)
 
-    # CLEANSING이 3회 이상이면 예외
-    if len(cleansing_indices) > 2:
-        raise ValueError("CLEANSING step can only appear once or twice.")
-
-    # CLEANSING이 두 번이라면 하나는 foam, 하나는 None이라고 가정
-    # foam이 뒤에 오도록 순서 보장
-    if len(cleansing_indices) == 2:
-        # 두 CLEANSING 단계 정보
-        first_idx, second_idx = cleansing_indices
-        first_step, first_key = step_product_pairs[first_idx]
-        second_step, second_key = step_product_pairs[second_idx]
-
-        # foam이 뒤에 있어야 함
-        # 만약 foam이 앞에 있면 순서 변경
-        if first_key == "cleansing_foam":
-            # 순서 뒤집기:두 번째를 foam으로
-            step_list = list(step_product_pairs)
-            step_list[first_idx], step_list[second_idx] = (second_step, second_key), (
-                first_step,
-                first_key,
-            )
-            step_product_pairs = step_list
-
-    selected_products: List[SubProductType] = []
-    chosen_keys_by_step = {}  # 이미 선택한 제품 키
-
-    for step, product_key in step_product_pairs:
-        step_products = PRODUCTS_DATA[step]
-        used_keys = chosen_keys_by_step.get(step, set())
-
-        if product_key is not None:
-            if product_key not in step_products:
-                # 지정된 key가 없으면 다른 제품 선택
-                available_keys = [k for k in step_products.keys() if k not in used_keys]
-                if not available_keys:
-                    raise ValueError(f"No available products for step {step}")
-                chosen_key = available_keys[0]
-                chosen_product_data = step_products[chosen_key]
-            else:
-                chosen_key = product_key
-                chosen_product_data = step_products[chosen_key]
-        else:
-            # product_key가 None이면 이전에 사용 안한 제품 중 하나 선택
-            available_keys = [k for k in step_products.keys() if k not in used_keys]
-            if not available_keys:
-                raise ValueError(f"No available products for step {step} (all used)")
-            chosen_key = available_keys[0]
-            chosen_product_data = step_products[chosen_key]
-
-        sub_product = SubProductType(
-            name=chosen_product_data["name"],
-            usage_time=chosen_product_data["usage_time"],
-            frequency=chosen_product_data["frequency"],
-            instructions=chosen_product_data["instructions"],
-            sequence=chosen_product_data["sequence"],
-            time=chosen_product_data["time"],
-        )
-        selected_products.append(sub_product)
-
-        if step not in chosen_keys_by_step:
-            chosen_keys_by_step[step] = set()
-        chosen_keys_by_step[step].add(chosen_key)
-
-    final_routine = split_routine_by_time(selected_products)
-    return final_routine
-
-
-def split_routine_by_time(products: List[SubProductType]) -> RoutineCreate:
-    morning_products = []
-    evening_products = []
-
-    # 아침, 저녁 나누기
-    for p in products:
-        if "morning" in p.usage_time:
-            morning_products.append(p)
-        if "evening" in p.usage_time:
-            evening_products.append(p)
-
-    # sequence로 정렬
-    morning_products.sort(key=lambda x: x.sequence)
-    evening_products.sort(key=lambda x: x.sequence)
-
-    # 리스트 그대로 반환 (순서가 sort로 보장됨)
-    return RoutineCreate(
-        morning_routine=morning_products, evening_routine=evening_products
-    )
+#     final_routine = split_routine_by_time(selected_products)
+#     return final_routine

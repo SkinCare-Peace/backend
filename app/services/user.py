@@ -1,6 +1,7 @@
 # services/user.py
 from typing import Optional, List
 from bson import ObjectId
+from fastapi import HTTPException
 from pymongo import ReturnDocument
 from schemas.routine import Routine
 from schemas.user import UserCreate, UserUpdate, User
@@ -96,18 +97,43 @@ async def add_owned_cosmetic(user_id: str, cosmetic_id: str) -> Optional[User]:
     try:
         if not ObjectId.is_valid(user_id):
             return None
-        result = await user_collection.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$addToSet": {"owned_cosmetics": cosmetic_id}},
+
+        # 1. 화장품 정보 조회
+        cosmetic = await db["oliveyoung_products_integrated"].find_one(
+            {"_id": ObjectId(cosmetic_id)}
         )
+        if not cosmetic:
+            raise HTTPException(status_code=404, detail="Cosmetic not found")
+
+        cosmetic_types = cosmetic.get("cosmetic_type", [])
+        if not cosmetic_types:
+            raise HTTPException(status_code=400, detail="Cosmetic type is missing")
+
+        # 2. 사용자 문서 업데이트를 위한 $addToSet 준비
+        add_to_set_fields = {
+            f"owned_cosmetics.{ct}": cosmetic_id for ct in cosmetic_types
+        }
+
+        # 3. 사용자 문서 업데이트
+        result = await db["users"].update_one(
+            {"_id": ObjectId(user_id)}, {"$addToSet": add_to_set_fields}
+        )
+
         if result.modified_count == 1:
-            updated_user = await user_collection.find_one({"_id": ObjectId(user_id)})
+            updated_user = await db["users"].find_one({"_id": ObjectId(user_id)})
             if updated_user:
                 updated_user["_id"] = str(updated_user["_id"])
+                # `owned_cosmetics`의 ObjectId를 문자열로 변환
+                if (
+                    "owned_cosmetics" in updated_user
+                    and updated_user["owned_cosmetics"]
+                ):
+                    for ct, ids in updated_user["owned_cosmetics"].items():
+                        updated_user["owned_cosmetics"][ct] = [str(oid) for oid in ids]
                 return User(**updated_user)
         return None
     except PyMongoError as e:
-        raise Exception(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 async def remove_owned_cosmetic(user_id: str, cosmetic_id: str) -> Optional[User]:

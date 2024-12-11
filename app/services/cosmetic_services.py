@@ -4,6 +4,7 @@ import unicodedata
 from bson import ObjectId
 from typing import List, Optional
 from fastapi import HTTPException
+from pymongo import ASCENDING
 
 
 def normalize_text(text: str) -> str:
@@ -21,14 +22,7 @@ async def search_cosmetics(db, query: str, limit: int) -> List[dict]:
 
     pipeline = [
         {"$match": {"name": {"$regex": q_normalized, "$options": "i"}}},
-        {"$sort": {"rank": 1}},  # rank를 기준으로 오름차순 정렬
-        {
-            "$group": {
-                "_id": "$name",  # 이름으로 그룹화하여 중복 제거
-                "doc": {"$first": "$$ROOT"},
-            }
-        },
-        {"$replaceRoot": {"newRoot": "$doc"}},
+        {"$sort": {"rank": ASCENDING}},  # rank를 기준으로 오름차순 정렬
         {"$limit": limit},  # 결과 개수 제한
         {
             "$project": {
@@ -42,7 +36,7 @@ async def search_cosmetics(db, query: str, limit: int) -> List[dict]:
         },
     ]
 
-    cursor = db["oliveyoung_products"].aggregate(pipeline)
+    cursor = db["oliveyoung_products_integrated"].aggregate(pipeline)
     results = await cursor.to_list(length=None)
 
     if not results:
@@ -61,7 +55,7 @@ async def search_by_id(db, product_id: str) -> dict:
     except Exception:
         raise HTTPException(status_code=400, detail="유효하지 않은 ID 형식입니다.")
 
-    product = await db["oliveyoung_products"].find_one(
+    product = await db["oliveyoung_products_integrated"].find_one(
         {"_id": object_id},
         {
             "_id": 1,

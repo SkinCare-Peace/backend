@@ -1,13 +1,19 @@
 from datetime import date
+import traceback
 from services.routine import (
     create_routine,
-    get_routine,
     get_routine_by_id,
     get_routine_records,
     save_routine_record,
 )
+from services.routine_generate import get_routine
 from fastapi import APIRouter, HTTPException, status
-from schemas.routine import Routine, RoutineRecord, RoutineRecordRequest
+from schemas.routine import (
+    Routine,
+    RoutineCreateRequest,
+    RoutineRecord,
+    RoutineRecordRequest,
+)
 from services.user import get_user_by_id
 
 router = APIRouter(
@@ -42,12 +48,16 @@ async def read_routine_records(user_id: str):
 
 
 @router.post("/", response_model=Routine)
-async def generate_routine(time_minutes: int, money_won: int):
+async def generate_routine(request: RoutineCreateRequest):
     try:
-        routine_create = get_routine(time_minutes, money_won)
+        time_minutes = request.time_minutes
+        money_won = request.money_won
+        owned_cosmetics = request.owned_cosmetics
+        routine_create = await get_routine(time_minutes, money_won, owned_cosmetics)
         routine = await create_routine(routine_create)
         return routine
     except ValueError as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
