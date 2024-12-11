@@ -1,11 +1,13 @@
 # services/routine.py
 from datetime import date, datetime
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from bson import ObjectId
 from data.products_data import PRODUCTS_DATA
 from schemas.routine import (
+    DailyRoutineRecord,
     RoutineCreate,
+    RoutineRecordRequest,
     Step,
     SubProductType,
     RoutineRecord,
@@ -20,30 +22,61 @@ routine_collection = db["routines"]
 routine_record_collection = db["routine_records"]
 
 
-async def save_routine_record(user_id: str, date: date) -> bool:
-    try:
-        date_as_datetime = datetime.combine(date, datetime.min.time())
-        if not ObjectId.is_valid(user_id):
-            return False
+async def save_routine_record(
+    user_id: str, record_date: date, usage_time: str, routine_practice: Dict[str, bool]
+) -> bool:
+    # records 배열 안에 {date, morning, evening} 구조를 관리
+    # 만약 records 중 해당 date에 대한 문서가 없다면 추가하고,
+    # 있다면 해당 usage_time에 대한 필드를 업데이트한다.
+    date_as_datetime = datetime.combine(record_date, datetime.min.time())
+
+    update_query = {
+        "$set": {"user_id": user_id, "records.$[elem]." + usage_time: routine_practice}
+    }
+
+    array_filters = [{"elem.date": date_as_datetime}]
+    result = await routine_record_collection.update_one(
+        {"user_id": user_id, "records.date": date_as_datetime},
+        update_query,
+        array_filters=array_filters,
+    )
+
+    if result.modified_count == 0:
+        # 해당 date에 대한 기록이 없으면 새로 추가
+        new_record = {
+            "date": date_as_datetime,
+            "morning": routine_practice if usage_time == "morning" else {},
+            "evening": routine_practice if usage_time == "evening" else {},
+        }
         await routine_record_collection.update_one(
-            {"user_id": user_id},
-            {"$addToSet": {"dates": date_as_datetime}},
-            upsert=True,
+            {"user_id": user_id}, {"$push": {"records": new_record}}, upsert=True
         )
-        return True
-    except PyMongoError as e:
-        raise Exception(f"Database error: {e}")
+
+    return True
 
 
 async def get_routine_records(user_id: str) -> Optional[RoutineRecord]:
     try:
         if not ObjectId.is_valid(user_id):
             return None
+
+        # 사용자 ID로 해당 사용자의 루틴 기록 찾기
         record = await routine_record_collection.find_one({"user_id": user_id})
+
         if record:
-            record["dates"] = [d.date() for d in record["dates"]]
-            return RoutineRecord(**record)
+            # MongoDB에서 가져온 데이터를 `RoutineRecord` 스키마에 맞게 변환
+            records = [
+                {
+                    "date": rec["date"].date(),
+                    "morning": rec.get("morning", {}),
+                    "evening": rec.get("evening", {}),
+                }
+                for rec in record.get("records", [])
+            ]
+            daily_records = [DailyRoutineRecord(**rec) for rec in records]
+            return RoutineRecord(user_id=user_id, records=daily_records)
         return None
+
     except PyMongoError as e:
         raise Exception(f"Database error: {e}")
 

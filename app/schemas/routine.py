@@ -1,5 +1,5 @@
 # schemas/routine.py
-from datetime import date
+import datetime
 from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List, Dict
@@ -17,9 +17,22 @@ class Step(str, Enum):
     MASK_PACK = "시간 투자형 집중케어"
 
 
-class RoutineRecord(BaseModel):
+class RoutineRecordRequest(BaseModel):
     user_id: str = Field(..., description="사용자 _id")
-    dates: List[date] = Field(..., description="루틴 실천 날짜 리스트")
+    date: datetime.date = Field(..., description="루틴 실천 날짜")
+    usage_time: str = Field(..., description="사용 시간대")
+    routine_practice: Dict[str, bool] = Field(..., description="루틴 실천 여부")
+
+
+class DailyRoutineRecord(BaseModel):
+    date: datetime.date
+    morning: Dict[str, bool] = {}
+    evening: Dict[str, bool] = {}
+
+
+class RoutineRecord(BaseModel):
+    user_id: str
+    records: List[DailyRoutineRecord]
 
 
 class UserType(str, Enum):

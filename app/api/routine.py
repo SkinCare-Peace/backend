@@ -7,7 +7,7 @@ from services.routine import (
     save_routine_record,
 )
 from fastapi import APIRouter, HTTPException, status
-from schemas.routine import Routine, RoutineRecord
+from schemas.routine import Routine, RoutineRecord, RoutineRecordRequest
 from services.user import get_user_by_id
 
 router = APIRouter(
@@ -17,9 +17,11 @@ router = APIRouter(
 )
 
 
-@router.post("/record/{user_id}")
-async def add_routine_record(user_id: str, date: date):
-    success = await save_routine_record(user_id, date)
+@router.post("/record")
+async def add_routine_record(record: RoutineRecordRequest):
+    success = await save_routine_record(
+        record.user_id, record.date, record.usage_time, record.routine_practice
+    )
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
