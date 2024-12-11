@@ -117,9 +117,11 @@ async def recommend_cosmetics(
     # 3.3 스코어링 단계
     scaler = MinMaxScaler()
 
-    # 가격 역정규화 (가격이 낮을수록 점수가 높음)
-    filtered_df["price_score"] = 1 - scaler.fit_transform(
-        filtered_df[["selling_price"]]
+    def budget_proximity_score(price, budget):
+        return 1 / (1 + abs(price - budget))  # 가격과 예산의 차이에 대한 역수
+
+    filtered_df["price_score"] = filtered_df["selling_price"].apply(
+        lambda price: budget_proximity_score(price, budget)
     )
 
     # 순위 역정규화 (순위 숫자가 낮을수록 좋음)
