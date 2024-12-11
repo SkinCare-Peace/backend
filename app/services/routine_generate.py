@@ -2,6 +2,8 @@ import math
 import random
 from typing import Dict, List
 
+from fastapi import HTTPException
+
 from data.products_data import PRODUCTS_DATA
 from db.database import get_db
 from schemas.routine import RoutineCreate, Step, SubProductType
@@ -60,8 +62,7 @@ async def init_price_segments():
             }
     except PyMongoError as e:
         # 에러 처리 로직 필요 시 추가
-        print(f"MongoDB Error while calculating price segments: {e}")
-
+        raise HTTPException(status_code=500, detail="Database error")
     global PRICE_SEGMENTS
     PRICE_SEGMENTS = result_dict
 
@@ -246,7 +247,6 @@ def generate_minimal_solution(steps, owned_cosmetics, time_minutes):
             else:
                 solution.append((None, 0.0))  # 선택 불가능하면 제외
 
-    print(f"Generated minimal solution: {solution}")  # 디버깅 출력
     return solution
 
 
@@ -280,7 +280,6 @@ def routine_optimization_step(solution, steps, time_minutes, money_won):
                 used_money += price
                 break
 
-    print(f"Routine Optimized Solution: {optimized_solution}")  # 디버깅 출력
     return optimized_solution
 
 
@@ -319,10 +318,7 @@ def cost_optimization_step(
                 current_score = new_score
 
         T *= cooling_rate
-        if iteration % 100 == 0:
-            print(f"{iteration}: Solution:{current_solution} Score: {best_score}")
 
-    print(f"Cost Optimized Solution: {best_solution}, Score: {best_score}")
     return best_solution
 
 
