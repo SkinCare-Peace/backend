@@ -137,12 +137,28 @@ async def add_owned_cosmetic(user_id: str, cosmetic_id: str) -> Optional[User]:
 
 
 async def remove_owned_cosmetic(user_id: str, cosmetic_id: str) -> Optional[User]:
+    """
+    사용자가 보유한 화장품 목록에서 특정 화장품을 제거합니다.
+    """
+    user = await user_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return None
+
+    owned_cosmetics = user.get("owned_cosmetics", {})
+    for category, cosmetics_list in owned_cosmetics.items():
+        if cosmetic_id in cosmetics_list:
+            owned_cosmetics[category] = [
+                cosmetic for cosmetic in cosmetics_list if cosmetic != cosmetic_id
+            ]
+
     updated_user = await user_collection.find_one_and_update(
         {"_id": ObjectId(user_id)},
-        {"$pull": {"owned_cosmetics": cosmetic_id}},
+        {"$set": {"owned_cosmetics": owned_cosmetics}},
         return_document=ReturnDocument.AFTER,
     )
+
     if updated_user:
         updated_user["_id"] = str(updated_user["_id"])
         return User(**updated_user)
+
     return None
