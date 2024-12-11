@@ -1,5 +1,5 @@
 # api/user.py
-from typing import Dict, List
+from typing import List
 from fastapi import APIRouter, HTTPException, status, Depends
 from schemas.user import UserCreate, UserUpdate, User
 from services.user import (
@@ -109,10 +109,35 @@ async def remove_cosmetic_from_user(user_id: str, cosmetic_id: str):
     return user
 
 
-@router.get("/{user_id}/cosmetics", response_model=Dict[str, List[str]])
+@router.get("/{user_id}/cosmetics", response_model=List[str])
 async def get_user_cosmetics(user_id: str):
     """
     사용자가 보유한 화장품 목록을 가져옵니다.
+    """
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    # 사용자 보유 화장품 목록 중복 제거
+    if user.owned_cosmetics:
+        all_cosmetics = []
+        for cosmetics_list in user.owned_cosmetics.values():
+            all_cosmetics.extend(cosmetics_list)
+
+        # 중복 제거 후 반환
+        result = list(set(all_cosmetics))
+    else:
+        result = []
+
+    return result
+
+
+@router.get("/{user_id}/cosmetics/by_type", response_model=dict)
+async def get_user_cosmetics_by_type(user_id: str):
+    """
+    사용자가 보유한 화장품을 종류별로 그룹화하여 가져옵니다.
     """
     user = await get_user_by_id(user_id)
     if not user:
