@@ -149,7 +149,7 @@ async def recommend_cosmetics(
     # 3. 함수 적용 및 개별 점수 저장
     filtered_df["skin_type_score"] = filtered_df["skin_type"].apply(
         lambda product_skin_type: (
-            1 if product_skin_type == user_skin_type.lower() else 0
+            1 if product_skin_type in [user_skin_type.lower(), "전체"] else 0
         )
     )
 
