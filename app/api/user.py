@@ -1,5 +1,5 @@
 # api/user.py
-from typing import List
+from typing import Dict, List
 from fastapi import APIRouter, HTTPException, status, Depends
 from schemas.user import UserCreate, UserUpdate, User
 from services.user import (
@@ -109,7 +109,7 @@ async def remove_cosmetic_from_user(user_id: str, cosmetic_id: str):
     return user
 
 
-@router.get("/{user_id}/cosmetics", response_model=List[str])
+@router.get("/{user_id}/cosmetics", response_model=Dict[str, List[str]])
 async def get_user_cosmetics(user_id: str):
     """
     사용자가 보유한 화장품 목록을 가져옵니다.
