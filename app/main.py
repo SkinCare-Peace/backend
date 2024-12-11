@@ -1,7 +1,15 @@
 # main.py
 import uvicorn
 from fastapi import FastAPI
-from api import cosmetics, predict_resnet, routine, user, detect_acne, statistics
+from api import (
+    cosmetics,
+    predict_resnet,
+    routine,
+    user,
+    detect_acne,
+    statistics,
+    notifications,
+)
 
 from services.model_loader import load_models
 from services.routine_generate import init_price_segments
@@ -14,6 +22,7 @@ app.include_router(cosmetics.router)
 app.include_router(user.router)
 app.include_router(detect_acne.router)
 app.include_router(statistics.router)
+app.include_router(notifications.router)
 
 
 @app.on_event("startup")
