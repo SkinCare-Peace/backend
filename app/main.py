@@ -3,7 +3,7 @@ import uvicorn
 from fastapi import FastAPI
 from api import cosmetics, predict_resnet, routine, user, detect_acne, statistics
 
-# from services.model_loader import load_models
+from services.model_loader import load_models
 from services.routine_generate import init_price_segments
 
 app = FastAPI()
@@ -23,5 +23,5 @@ async def startup_event():
 
 
 if __name__ == "__main__":
-    # load_models()
+    load_models()
     uvicorn.run(app, host="127.0.0.1", port=8000)
