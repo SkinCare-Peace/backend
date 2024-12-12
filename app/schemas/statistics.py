@@ -9,6 +9,7 @@ class Score(BaseModel):
     pigmentation: int = Field(..., description="색소침착 점수")
     wrinkle: int = Field(..., description="주름 점수")
     pore: int = Field(..., description="모공 점수")
+    elasticity: int = Field(..., description="탄력 점수")
 
 
 class StatisticsRequest(BaseModel):
