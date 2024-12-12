@@ -5,7 +5,7 @@ from typing import Dict
 
 class Score(BaseModel):
     acne: int = Field(..., description="여드름 점수")
-    dryness: int = Field(..., description="건조도 점수")
+    moisture: int = Field(..., description="수분 점수")
     pigmentation: int = Field(..., description="색소침착 점수")
     wrinkle: int = Field(..., description="주름 점수")
     pore: int = Field(..., description="모공 점수")
