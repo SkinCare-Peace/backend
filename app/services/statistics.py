@@ -21,7 +21,11 @@ async def save_statistics(statistics_entry: StatisticsRequest) -> bool:
         result = await statistics_collection.update_one(
             filter_query, update_query, upsert=True
         )
-        return result.modified_count > 0 or result.upserted_id is not None
+        return (
+            result.modified_count > 0
+            or result.upserted_id is not None
+            or result.matched_count > 0
+        )
     except PyMongoError as e:
         raise Exception(f"Database error: {e}")
 

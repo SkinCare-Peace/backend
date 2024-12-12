@@ -84,8 +84,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def startup_event():
     # 서버 시작 시 평균 단가 계산 함수 호출
     await init_price_segments()
+    load_models()
 
 
 if __name__ == "__main__":
-    load_models()
     uvicorn.run(app, host="127.0.0.1", port=8000)

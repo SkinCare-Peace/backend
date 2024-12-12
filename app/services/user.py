@@ -73,7 +73,7 @@ async def update_user(user_id: str, user_update: UserUpdate) -> Optional[User]:
         result = await user_collection.update_one(
             {"_id": ObjectId(user_id)}, {"$set": update_data}
         )
-        if result.modified_count == 1:
+        if result.modified_count == 1 or result.matched_count == 1:
             updated_user = await user_collection.find_one({"_id": ObjectId(user_id)})
             if updated_user:
                 updated_user["_id"] = str(updated_user["_id"])
