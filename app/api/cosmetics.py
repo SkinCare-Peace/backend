@@ -3,8 +3,8 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
 from db.database import get_db
-from schemas.cosmetics import ProductRecommendation
-from services.cosmetic_recommend import recommend_cosmetics
+from schemas.cosmetics import ProductRecommendation, ReasonRequest
+from services.cosmetic_recommend import get_gpt_response, recommend_cosmetics
 import traceback
 from schemas.cosmetics import CosmeticSearchResult
 from services.cosmetic_services import search_by_id, search_cosmetics
@@ -66,3 +66,21 @@ async def get_recommendations(
 
     except Exception as e:
         print(traceback.format_exc())
+
+
+@router.post("/recommendation/reason", response_model=str)
+async def get_recommendation_reason(request: ReasonRequest):
+    """
+    화장품 추천 이유를 생성합니다.
+    """
+    return await get_gpt_response(
+        request.name,
+        request.brand,
+        request.skin_type_score,
+        request.concern_score,
+        request.rank_score,
+        request.price_score,
+        request.matching_ingredients,
+        request.user_skin_type,
+        request.user_concerns,
+    )

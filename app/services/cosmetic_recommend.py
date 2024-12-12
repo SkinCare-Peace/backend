@@ -28,6 +28,59 @@ function_schema = {
 }
 
 
+async def get_gpt_response(
+    name,
+    brand,
+    skin_type_score,
+    concern_score,
+    rank_score,
+    price_score,
+    matching_ingredients,
+    user_skin_type,
+    user_concerns,
+) -> str:
+    prompt = f"""
+    당신은 전문적인 스킨케어 컨설턴트이며, 비둘기 캐릭터입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:
+
+    사용자 피부 타입: {user_skin_type}
+    사용자 피부 고민: {', '.join(user_concerns)}
+    제품명: {name}
+    브랜드: {brand}
+    피부 타입 점수: {skin_type_score}
+    피부 고민 점수: {concern_score}
+    순위 점수: {rank_score}
+    가격 점수: {price_score}
+    매칭된 성분: {matching_ingredients}
+
+    추천 이유는 제품이 사용자의 피부 타입과 고민에 어떻게 부합하는지, 매칭된 성분과 전반적인 이점을 강조하여 작성해 주세요.
+    모든 점수는 0부터 1까지 이루어진다.
+    
+    응답은 한국어로 한다. 최소 1줄 최대 2줄로 작성한다. 문장은 '-요'체로 작성한다.
+    제품명을 이유에 언급하지 않는다. 성분을 근거로 한 설명만을 작성한다. 구체적인 점수는 언급하지 않는다.
+    ex) '건성 피부에 적합한 히알루론산이 함유되어 있고, 여드름 고민 해결에 도움이되는 샐리실릭산이 함유되어 있어요.'
+    """
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {
+                "role": "system",
+                "content": "당신은 전문적인 스킨케어 컨설턴트이며, 비둘기 캐릭터입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        functions=[function_schema],  # type: ignore
+        function_call={"name": "generate_recommendation_reason"},
+    )
+    response = response.choices[0].message.function_call
+    if not response:
+        raise HTTPException(
+            status_code=500, detail="Failed to generate recommendation reason"
+        )
+    reason = json.loads(response.arguments)["reason"]
+
+    return reason
+
+
 async def recommend_cosmetics(
     user_skin_type: str,
     user_concerns: List[str],
@@ -197,45 +250,7 @@ async def recommend_cosmetics(
 
     recommendations = []
     for index, product in top_products.iterrows():
-        prompt = f"""
-        당신은 전문적인 스킨케어 컨설턴트이며, 비둘기 캐릭터입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:
-
-        사용자 피부 타입: {user_skin_type}
-        사용자 피부 고민: {', '.join(user_concerns)}
-        제품명: {product['name']}
-        브랜드: {product['brand']}
-        피부 타입 점수: {product['skin_type_score']}
-        피부 고민 점수: {product['concern_score']}
-        순위 점수: {product['rank_score']}
-        가격 점수: {product['price_score']}
-        매칭된 성분: {product['matching_ingredients']}
-
-        추천 이유는 제품이 사용자의 피부 타입과 고민에 어떻게 부합하는지, 매칭된 성분과 전반적인 이점을 강조하여 작성해 주세요.
-        모든 점수는 0부터 1까지 이루어진다.
-        
-        응답은 한국어로 한다. 최소 1줄 최대 2줄로 작성한다. 문장은 '-요'체로 작성한다.
-        제품명을 이유에 언급하지 않는다. 성분을 근거로 한 설명만을 작성한다. 구체적인 점수는 언급하지 않는다.
-        ex) '건성 피부에 적합한 히알루론산이 함유되어 있고, 여드름 고민 해결에 도움이되는 샐리실릭산이 함유되어 있어요.'
-        """
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "당신은 전문적인 스킨케어 컨설턴트이며, 비둘기 캐릭터입니다. 아래의 정보를 바탕으로 사용자가 이해하기 쉽도록 제품을 추천하는 이유를 간결하게 작성해 주세요:",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            functions=[function_schema],  # type: ignore
-            function_call={"name": "generate_recommendation_reason"},
-        )
-        response = response.choices[0].message.function_call
-        if not response:
-            raise HTTPException(
-                status_code=500, detail="Failed to generate recommendation reason"
-            )
-        reason = json.loads(response.arguments)["reason"]
-
+        # reason = await get_gpt_response(product, user_skin_type, user_concerns)
         recommendation = ProductRecommendation(
             _id=str(product["_id"]),
             name=product["name"],
@@ -248,7 +263,7 @@ async def recommend_cosmetics(
             price_score=product["price_score"],
             total_score=product["total_score"],
             matching_ingredients=product["matching_ingredients"],
-            reason=reason,
+            reason="",
             image_url=product.get("image_url", ""),
         )
         recommendations.append(recommendation)
