@@ -51,8 +51,19 @@ logger.addHandler(file_handler)
 async def global_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, HTTPException):
         raise exc
+
+    # 요청 정보 수집
+    request_info = f"Request Method: {request.method}\n"
+    request_info += f"Request URL: {request.url}\n"
+    request_info += f"Request Headers: {dict(request.headers)}\n"
+    try:
+        body = await request.body()
+        request_info += f"Request Body: {body.decode('utf-8')}\n"
+    except Exception as body_exc:
+        request_info += f"Request Body: Could not retrieve due to {str(body_exc)}\n"
+
     # 예외 정보 수집
-    error_message = f"Exception occurred at {request.method} {request.url}\n"
+    error_message = f"Exception occurred:\n{request_info}\n"
     error_message += f"Details: {str(exc)}\n"
     error_message += "Traceback:\n"
     error_message += "".join(
