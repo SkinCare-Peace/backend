@@ -1,6 +1,9 @@
 # main.py
+import logging
+import traceback
+from fastapi.responses import JSONResponse
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from api import (
     cosmetics,
     predict_resnet,
@@ -23,6 +26,47 @@ app.include_router(user.router)
 app.include_router(detect_acne.router)
 app.include_router(statistics.router)
 app.include_router(notifications.router)
+
+# 로거 설정
+logger = logging.getLogger("detailed_exception_logger")
+logger.setLevel(logging.ERROR)
+
+# 콘솔 핸들러 설정
+console_handler = logging.StreamHandler()
+console_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+console_handler.setFormatter(console_formatter)
+
+# 파일 핸들러 설정
+file_handler = logging.FileHandler("detailed_exceptions.log", encoding="utf-8")
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+
+# 핸들러 추가
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
+
+
+# 모든 예외를 핸들링하는 핸들러
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        raise exc
+    # 예외 정보 수집
+    error_message = f"Exception occurred at {request.method} {request.url}\n"
+    error_message += f"Details: {str(exc)}\n"
+    error_message += "Traceback:\n"
+    error_message += "".join(
+        traceback.format_exception(type(exc), exc, exc.__traceback__)
+    )
+
+    # 로그를 콘솔 및 파일에 출력
+    logger.error(error_message)
+
+    # 클라이언트에 반환할 응답
+    return JSONResponse(
+        status_code=500,
+        content={"message": "알 수 없는 에러"},
+    )
 
 
 @app.on_event("startup")

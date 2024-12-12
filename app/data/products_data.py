@@ -4,7 +4,7 @@ PRODUCTS_DATA = {
     Step.CLEANSING: {
         "cleansing_oil": {
             "name": "클렌징오일",
-            "usage_time": ["morning", "evening"],
+            "usage_time": ["evening"],
             "frequency": 1,
             "instructions": (
                 "1. 깨끗하게 씻은 손에 물기를 제거해 주세요!\n"
@@ -30,7 +30,7 @@ PRODUCTS_DATA = {
         },
         "cleansing_water": {
             "name": "클렌징워터",
-            "usage_time": ["morning", "evening"],
+            "usage_time": ["evening"],
             "frequency": 1,
             "instructions": (
                 "1. 화장솜에 클렌징 워터를 충분히 적셔줍니다.\n"
@@ -43,7 +43,7 @@ PRODUCTS_DATA = {
         },
         "cleansing_milk": {
             "name": "클렌징밀크",
-            "usage_time": ["morning", "evening"],
+            "usage_time": ["evening"],
             "frequency": 1,
             "instructions": (
                 "1. 손에 1~2 펌프의 클렌징 밀크를 덜어냅니다.\n"
@@ -55,7 +55,7 @@ PRODUCTS_DATA = {
         },
         "cleansing_gel": {
             "name": "클렌징젤",
-            "usage_time": ["morning", "evening"],
+            "usage_time": ["evening"],
             "frequency": 1,
             "instructions": (
                 "1. 깨끗하게 씻은 손에 500원 크기 정도의 클렌징젤을 덜어냅니다.\n"
@@ -68,7 +68,7 @@ PRODUCTS_DATA = {
         },
         "cleansing_balm": {
             "name": "클렌징밤",
-            "usage_time": ["morning", "evening"],
+            "usage_time": ["evening"],
             "frequency": 1,
             "instructions": (
                 "1. 깨끗하게 씻은 손에 500원 크기 정도의 클렌징밤을 덜어내 주세요.\n"
@@ -82,7 +82,7 @@ PRODUCTS_DATA = {
     Step.CLEANSING_CARE: {
         "scrub": {
             "name": "스크럽",
-            "usage_time": ["morning", "evening"],
+            "usage_time": ["evening"],
             "frequency": 1,
             "instructions": (
                 "1. 세안 후 물기 제거 없이 500원 크기 정도 스크럽을 손에 덜어냅니다.\n"
@@ -95,7 +95,7 @@ PRODUCTS_DATA = {
         },
         "peeling": {
             "name": "필링",
-            "usage_time": ["morning", "evening"],
+            "usage_time": ["evening"],
             "frequency": 1,
             "instructions": (
                 "1. 세안 후 물기를 제거한 상태에서 1~2 펌프 필링제를 손에 덜어냅니다.\n"
