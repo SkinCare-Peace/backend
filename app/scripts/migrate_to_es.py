@@ -22,14 +22,28 @@ async def migrate_data():
     # Elasticsearch 연결
     es = AsyncElasticsearch(ES_URL)
     
-    # 인덱스 설정 (Nori 분석기 포함)
+    # 인덱스 설정 (Nori 분석기 및 동의어 필터 포함)
     index_settings = {
         "settings": {
             "analysis": {
+                "filter": {
+                    "cosmetic_synonyms": {
+                        "type": "synonym",
+                        "synonyms": [
+                            "선크림, 선스틱, 선케어, 선스프레이, 선쿠션, 선에센스 => 선케어",
+                            "폼클렌징, 클렌징폼, 폼클렌저, 클렌징, 클렌저 => 클렌징",
+                            "스킨, 토너, 결정리 => 토너",
+                            "에센스, 세럼, 앰플 => 에센스",
+                            "로션, 보습제 => 크림",
+                            "마스크팩, 슬리핑팩, 팩 => 팩"
+                        ]
+                    }
+                },
                 "tokenizer": {
                     "nori_user_dict": {
                         "type": "nori_tokenizer",
-                        "decompound_mode": "mixed"
+                        "decompound_mode": "none",
+                        "user_dictionary_rules": ["선크림", "선스틱", "선스프레이", "선쿠션", "선에센스", "폼클렌징", "클렌징폼", "폼클렌저", "결정리", "슬리핑팩", "마스크팩"]
                     }
                 },
                 "analyzer": {
@@ -37,8 +51,8 @@ async def migrate_data():
                         "type": "custom",
                         "tokenizer": "nori_user_dict",
                         "filter": [
-                            "nori_readingform",
-                            "lowercase"
+                            "lowercase",
+                            "cosmetic_synonyms"
                         ]
                     }
                 }
@@ -78,10 +92,13 @@ async def migrate_data():
         }
     }
 
-    # 1. 인덱스가 없으면 생성
-    if not await es.indices.exists(index=INDEX_NAME):
-        logger.info(f"Creating index: {INDEX_NAME} with Nori analyzer mapping")
-        await es.indices.create(index=INDEX_NAME, body=index_settings)
+    # 1. 인덱스가 존재하면 삭제 후 재생성 (필터 변경사항 반영을 위해)
+    if await es.indices.exists(index=INDEX_NAME):
+        logger.info(f"Deleting existing index: {INDEX_NAME} to apply new settings")
+        await es.indices.delete(index=INDEX_NAME)
+    
+    logger.info(f"Creating index: {INDEX_NAME} with Nori analyzer (user_dict) and Synonym mapping")
+    await es.indices.create(index=INDEX_NAME, body=index_settings)
     
     cursor = collection.find()
     actions = []

@@ -149,7 +149,8 @@ async def generate_recommendations_node(state: RecommendationState):
         return {"final_recommendations": []}
 
     llm = ChatOpenAI(
-        model="gpt-4o", 
+        # model="gpt-4o",
+        model="gpt-5.4-nano", 
         temperature=0, 
         api_key=OPENAI_KEY
     ).with_structured_output(AIRecommendationList)
@@ -350,7 +351,8 @@ async def get_gpt_response(
     ex) '건성 피부에 적합한 히알루론산이 함유되어 있고, 여드름 고민 해결에 도움이되는 샐리실릭산이 함유되어 있어요.'
     """
     response = client.chat.completions.create(
-        model="gpt-4o",
+        # model="gpt-4o",
+        model="gpt-5.4-nano",
         messages=[
             {
                 "role": "system",
