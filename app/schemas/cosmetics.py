@@ -1,14 +1,14 @@
 # schemas/cosmetics.py
 
 from pydantic import BaseModel, Field
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 class ProductBase(BaseModel):
     id: str = Field(..., alias="_id")
     name: str
     brand: str
-    img_url: str = Field(..., alias="image_url")
+    img_url: Optional[str] = Field(None, alias="image_url")
 
     class Config:
         populate_by_name = True

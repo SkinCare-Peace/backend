@@ -18,7 +18,7 @@ scheduler.start()
 
 
 # WebSocket 연결 관리
-@router.websocket("/ws")
+@router.websocket("/ws/")
 async def websocket_endpoint(websocket: WebSocket, user_id: str = Query(...)):
     await websocket.accept()
     connections[user_id] = websocket

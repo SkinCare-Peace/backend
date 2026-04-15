@@ -4,6 +4,7 @@ import traceback
 from fastapi.responses import JSONResponse
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from api import (
     cosmetics,
     predict_resnet,
@@ -18,6 +19,23 @@ from services.model_loader import load_models
 from services.routine_generate import init_price_segments
 
 app = FastAPI()
+
+# CORS 설정 추가
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+async def root():
+    return {"message": "Server is running"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 app.include_router(predict_resnet.router)
 app.include_router(routine.router)
@@ -88,4 +106,4 @@ async def startup_event():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

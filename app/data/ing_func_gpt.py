@@ -113,7 +113,8 @@ for ing, functions in tqdm(ingredient_functions_dict.items()):
         ]
 
         response = openai.chat.completions.create(
-            model="gpt-4o",
+            # model="gpt-4o",
+            model="gpt-5.4-nano",
             messages=messages,  # type: ignore
             functions=[schema],  # type: ignore
             function_call={"name": "ingredient_effectiveness"},
